@@ -46,10 +46,61 @@ npm install
 
 3. Set up environment variables:
 ```bash
-# Create .env file with your Supabase credentials
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+# Copy the environment template
+cp .env.example .env
+
+# Edit .env with your actual values
+# IMPORTANT: Never commit .env to version control
 ```
+
+Required environment variables:
+- `VITE_STRIPE_PUBLISHABLE_KEY`: Your Stripe publishable key (safe for client-side)
+- `STRIPE_SECRET_KEY`: Your Stripe secret key (server-side only)
+- `STRIPE_RESTRICTED_KEY`: Your Stripe restricted key (the one you provided)
+- `RESEND_API_KEY`: Your Resend email service API key
+- `SUPPORT_EMAIL`: Email address for receiving support tickets (marketing-support@bobbiedigital.com)
+- `VITE_SUPABASE_URL`: Your Supabase project URL
+- `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+
+**⚠️ Security Note**: The `.env` file is ignored by Git to prevent accidental exposure of sensitive keys. Never commit API keys or secrets to version control.
+
+## 🎯 Support Center Features
+
+### Customer Support Portal
+- **Multi-tier Contact Form**: Comprehensive form with severity levels (Critical, High, Medium, Low)
+- **Category-based Routing**: Tickets are categorized (Technical, Billing, Account, Integration, General)
+- **FAQ Integration**: Dynamic FAQ display based on selected category
+- **Real-time Validation**: Form validation with helpful error messages
+- **Email Notifications**: Automatic email confirmations and notifications
+
+### Admin Support Dashboard
+- **Ticket Management**: View, filter, and manage all support tickets
+- **Severity-based Customer Grouping**: View customers by ticket severity levels
+- **Analytics & Insights**: Visual analytics for ticket trends and customer data
+- **Response Time Tracking**: Monitor support team performance
+- **Customer Profiles**: Detailed customer information with support history
+
+### Email Integration
+- **Resend API Integration**: Professional email notifications using Resend service
+- **Multi-template System**: Different email templates for various scenarios
+- **Automatic Workflows**: 
+  - Support team notification when new ticket is created
+  - Customer confirmation email with ticket details
+  - Response notifications for ticket updates
+- **HTML & Text Templates**: Rich HTML emails with plain text fallbacks
+
+### Severity Levels & Response Times
+- **Critical**: System down, production issues (< 1 hour response)
+- **High**: Major functionality issues (< 4 hours response)
+- **Medium**: Minor issues, feature requests (< 24 hours response)
+- **Low**: General questions, documentation (< 48 hours response)
+
+### Customer Tier Management
+- **Basic Tier**: Standard support with 48-hour response time
+- **Premium Tier**: Priority support with 24-hour response time
+- **Enterprise Tier**: Dedicated support with 1-hour response time and phone support
+
+All support tickets are automatically routed to `marketing-support@bobbiedigital.com` with detailed information and priority levels.
 
 4. Start the development server:
 ```bash

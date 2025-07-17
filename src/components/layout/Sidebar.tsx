@@ -10,7 +10,8 @@ import {
   Settings, 
   Users, 
   TrendingUp,
-  Network
+  Network,
+  HelpCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -27,6 +28,7 @@ const navigation = [
   { name: 'Suppliers', icon: Users, current: false, path: '/' },
   { name: 'Analytics', icon: TrendingUp, current: false, path: '/' },
   { name: 'MCP Integration', icon: Network, current: false, path: '/mcp' },
+  { name: 'Support Center', icon: HelpCircle, current: false, path: '/support' },
   { name: 'Configuration', icon: Settings, current: false, path: '/configuration' },
 ];
 
