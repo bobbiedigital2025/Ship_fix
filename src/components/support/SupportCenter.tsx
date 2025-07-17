@@ -79,7 +79,13 @@ const SupportCenter: React.FC = () => {
     setIsSubmitting(true);
     try {
       const ticket = await SupportService.createTicket({
-        ...data,
+        customerName: data.customerName,
+        customerEmail: data.customerEmail,
+        company: data.company,
+        category: data.category,
+        severity: data.severity,
+        subject: data.subject,
+        description: data.description,
         priority: getSeverityPriority(data.severity),
       });
       
@@ -352,28 +358,28 @@ const SupportCenter: React.FC = () => {
                       <AlertTriangle className="w-4 h-4 text-red-500" />
                       <span className="text-sm">Critical</span>
                     </div>
-                    <Badge variant="destructive">< 1 hour</Badge>
+                    <Badge variant="destructive">&lt; 1 hour</Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4 text-orange-500" />
                       <span className="text-sm">High</span>
                     </div>
-                    <Badge variant="secondary">< 4 hours</Badge>
+                    <Badge variant="secondary">&lt; 4 hours</Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-yellow-500" />
                       <span className="text-sm">Medium</span>
                     </div>
-                    <Badge variant="secondary">< 24 hours</Badge>
+                    <Badge variant="secondary">&lt; 24 hours</Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-500" />
                       <span className="text-sm">Low</span>
                     </div>
-                    <Badge variant="secondary">< 48 hours</Badge>
+                    <Badge variant="secondary">&lt; 48 hours</Badge>
                   </div>
                 </CardContent>
               </Card>
