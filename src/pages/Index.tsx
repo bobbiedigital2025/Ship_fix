@@ -1,12 +1,15 @@
 
 import React from 'react';
-import AppLayout from '@/components/AppLayout';
+import PageLayout from '@/components/PageLayout';
+import DashboardMain from '@/components/dashboard/DashboardMain';
 import { AppProvider } from '@/contexts/AppContext';
 
 const Index: React.FC = () => {
   return (
     <AppProvider>
-      <AppLayout />
+      <PageLayout>
+        <DashboardMain />
+      </PageLayout>
     </AppProvider>
   );
 };

@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import PageLayout from '@/components/PageLayout';
+import { AppProvider } from '@/contexts/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { mcpClient, MCPServer } from '@/lib/mcp-client';
 import { Plus, Server, Settings, Database, Network } from 'lucide-react';
-import AppLayout from '@/components/AppLayout';
 
 export default function MCPDashboard() {
   const [servers, setServers] = useState<MCPServer[]>([]);
@@ -37,8 +38,9 @@ export default function MCPDashboard() {
   };
 
   return (
-    <AppLayout>
-      <div className="container mx-auto p-6">
+    <AppProvider>
+      <PageLayout>
+        <div className="container mx-auto p-6">
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
             <Network className="h-8 w-8" />
@@ -145,7 +147,8 @@ export default function MCPDashboard() {
             </div>
           </TabsContent>
         </Tabs>
-      </div>
-    </AppLayout>
+        </div>
+      </PageLayout>
+    </AppProvider>
   );
 }

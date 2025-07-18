@@ -1,4 +1,6 @@
 import React from 'react';
+import PageLayout from '@/components/PageLayout';
+import { AppProvider } from '@/contexts/AppContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Settings, Users, Truck, Package, Bell, BarChart3, Zap } from 'lucide-react';
@@ -11,7 +13,9 @@ import AutomationConfig from '@/components/configuration/AutomationConfig';
 
 const Configuration: React.FC = () => {
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <AppProvider>
+      <PageLayout>
+        <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Configuration Center</h1>
         <p className="text-gray-600">Customize your supply chain platform to match your business needs</p>
@@ -69,7 +73,9 @@ const Configuration: React.FC = () => {
           <AutomationConfig />
         </TabsContent>
       </Tabs>
-    </div>
+        </div>
+      </PageLayout>
+    </AppProvider>
   );
 };
 
