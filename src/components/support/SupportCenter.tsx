@@ -213,7 +213,7 @@ const SupportCenter: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label>Category *</Label>
-                      <Select onValueChange={(value) => setValue('category', value as any)}>
+                      <Select onValueChange={(value: string) => setValue('category', value as 'billing' | 'technical' | 'account' | 'integration' | 'general')}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
@@ -254,7 +254,7 @@ const SupportCenter: React.FC = () => {
 
                     <div>
                       <Label>Severity Level *</Label>
-                      <Select onValueChange={(value) => setValue('severity', value as any)}>
+                      <Select onValueChange={(value: string) => setValue('severity', value as 'low' | 'medium' | 'high' | 'critical')}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select severity" />
                         </SelectTrigger>

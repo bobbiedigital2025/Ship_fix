@@ -10,7 +10,7 @@ export interface MCPServer {
 export interface MCPTool {
   name: string;
   description: string;
-  inputSchema: any;
+  inputSchema: Record<string, unknown>;
 }
 
 export interface MCPResource {
@@ -22,8 +22,8 @@ export interface MCPResource {
 
 export interface MCPClient {
   discoverTools: (serverUrl: string) => Promise<MCPTool[]>;
-  invokeTool: (serverUrl: string, toolName: string, args: any) => Promise<any>;
-  getResource: (serverUrl: string, resourceUri: string) => Promise<any>;
+  invokeTool: (serverUrl: string, toolName: string, args: Record<string, unknown>) => Promise<unknown>;
+  getResource: (serverUrl: string, resourceUri: string) => Promise<unknown>;
   connectServer: (serverUrl: string) => Promise<MCPServer>;
 }
 
@@ -45,7 +45,7 @@ class MCPClientImpl implements MCPClient {
     }
   }
 
-  async invokeTool(serverUrl: string, toolName: string, args: any): Promise<any> {
+  async invokeTool(serverUrl: string, toolName: string, args: Record<string, unknown>): Promise<unknown> {
     try {
       const { data, error } = await supabase.functions.invoke('mcp-invoke-tool', {
         body: { serverUrl, toolName, args }
@@ -58,7 +58,7 @@ class MCPClientImpl implements MCPClient {
     }
   }
 
-  async getResource(serverUrl: string, resourceUri: string): Promise<any> {
+  async getResource(serverUrl: string, resourceUri: string): Promise<unknown> {
     try {
       const { data, error } = await supabase.functions.invoke('mcp-get-resource', {
         body: { serverUrl, resourceUri }

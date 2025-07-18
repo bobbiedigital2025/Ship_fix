@@ -26,7 +26,7 @@ interface NotificationChannel {
   id: string;
   type: 'email' | 'sms' | 'in-app';
   name: string;
-  config: any;
+  config: Record<string, unknown>;
   enabled: boolean;
 }
 
@@ -201,7 +201,7 @@ const AlertConfig: React.FC = () => {
                         </div>
                         <div>
                           <Label htmlFor="severity">Severity</Label>
-                          <Select onValueChange={(value) => setNewRule({...newRule, severity: value as any})}>
+                          <Select onValueChange={(value: string) => setNewRule({...newRule, severity: value as 'low' | 'medium' | 'high' | 'critical'})}>
                             <SelectTrigger>
                               <SelectValue placeholder="Select severity" />
                             </SelectTrigger>

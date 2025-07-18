@@ -13,7 +13,7 @@ interface MCPResourceViewerProps {
 export default function MCPResourceViewer({ servers }: MCPResourceViewerProps) {
   const [selectedServer, setSelectedServer] = useState<string>('');
   const [selectedResource, setSelectedResource] = useState<string>('');
-  const [resourceContent, setResourceContent] = useState<any>(null);
+  const [resourceContent, setResourceContent] = useState<unknown>(null);
   const [loading, setLoading] = useState(false);
 
   const selectedServerData = servers.find(s => s.id === selectedServer);

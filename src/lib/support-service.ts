@@ -113,24 +113,28 @@ const mockFAQs: FAQ[] = [
 export class SupportService {
   static async createTicket(ticket: Omit<SupportTicket, 'id' | 'createdAt' | 'updatedAt' | 'status'>): Promise<SupportTicket> {
     // Simulate API call
-    return new Promise(async (resolve, reject) => {
-      try {
-        const newTicket: SupportTicket = {
-          ...ticket,
-          id: Date.now().toString(),
-          status: 'open',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        
-        // Send email notifications
-        await EmailService.sendSupportTicketNotification(newTicket);
-        await EmailService.sendCustomerConfirmation(newTicket);
-        
-        setTimeout(() => resolve(newTicket), 1000);
-      } catch (error) {
-        reject(error);
-      }
+    return new Promise((resolve, reject) => {
+      const processTicket = async () => {
+        try {
+          const newTicket: SupportTicket = {
+            ...ticket,
+            id: Date.now().toString(),
+            status: 'open',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          
+          // Send email notifications
+          await EmailService.sendSupportTicketNotification(newTicket);
+          await EmailService.sendCustomerConfirmation(newTicket);
+          
+          setTimeout(() => resolve(newTicket), 1000);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      processTicket();
     });
   }
 

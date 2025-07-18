@@ -16,7 +16,7 @@ export default function MCPToolInvoker({ servers }: MCPToolInvokerProps) {
   const [selectedServer, setSelectedServer] = useState<string>('');
   const [selectedTool, setSelectedTool] = useState<string>('');
   const [toolArgs, setToolArgs] = useState<string>('{}');
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<unknown>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
 

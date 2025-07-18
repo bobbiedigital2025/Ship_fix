@@ -20,7 +20,7 @@ interface AutomationRule {
   };
   actions: {
     type: string;
-    config: any;
+    config: Record<string, unknown>;
   }[];
   enabled: boolean;
   lastRun?: string;
@@ -173,9 +173,9 @@ const AutomationConfig: React.FC = () => {
                         <div className="grid grid-cols-3 gap-4">
                           <div>
                             <Label>Event Type</Label>
-                            <Select onValueChange={(value) => setNewRule({
+                            <Select onValueChange={(value: string) => setNewRule({
                               ...newRule, 
-                              trigger: { ...newRule.trigger, type: value } as any
+                              trigger: { ...newRule.trigger, type: value }
                             })}>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select trigger" />
@@ -191,9 +191,9 @@ const AutomationConfig: React.FC = () => {
                           </div>
                           <div>
                             <Label>Condition</Label>
-                            <Select onValueChange={(value) => setNewRule({
+                            <Select onValueChange={(value: string) => setNewRule({
                               ...newRule,
-                              trigger: { ...newRule.trigger, condition: value } as any
+                              trigger: { ...newRule.trigger, condition: value }
                             })}>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select condition" />
@@ -213,7 +213,7 @@ const AutomationConfig: React.FC = () => {
                               value={newRule.trigger?.value || ''}
                               onChange={(e) => setNewRule({
                                 ...newRule,
-                                trigger: { ...newRule.trigger, value: e.target.value } as any
+                                trigger: { ...newRule.trigger, value: e.target.value }
                               })}
                               placeholder="Enter value"
                             />
