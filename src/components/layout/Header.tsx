@@ -1,13 +1,23 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { 
   Menu, 
   Search, 
   Bell, 
   User, 
-  Settings 
+  Settings,
+  HelpCircle,
+  LogOut,
+  UserCircle
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -15,6 +25,12 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
+  const navigate = useNavigate();
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
+  };
+
   return (
     <header className="bg-white border-b border-gray-200 px-4 py-3">
       <div className="flex items-center justify-between">
@@ -50,13 +66,39 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             </Badge>
           </Button>
           
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" onClick={() => handleNavigation('/configuration')}>
             <Settings className="h-5 w-5" />
           </Button>
           
-          <Button variant="ghost" size="sm">
-            <User className="h-5 w-5" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <User className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={() => handleNavigation('/')}>
+                <UserCircle className="mr-2 h-4 w-4" />
+                Dashboard
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleNavigation('/support')}>
+                <HelpCircle className="mr-2 h-4 w-4" />
+                Support Center
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleNavigation('/configuration')}>
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleNavigation('/mcp')}>
+                <Settings className="mr-2 h-4 w-4" />
+                MCP Integration
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
