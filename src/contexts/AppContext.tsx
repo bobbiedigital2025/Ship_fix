@@ -17,7 +17,8 @@ const AppContext = createContext<AppContextType>(defaultAppContext);
 export const useAppContext = () => useContext(AppContext);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Start with sidebar open by default on larger screens
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const toggleSidebar = () => {
     setSidebarOpen(prev => !prev);

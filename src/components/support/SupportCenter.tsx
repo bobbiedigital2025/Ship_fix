@@ -41,6 +41,8 @@ const supportFormSchema = z.object({
 type SupportFormData = z.infer<typeof supportFormSchema>;
 
 const SupportCenter: React.FC = () => {
+  console.log('SupportCenter component rendered');
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [faqs, setFaqs] = useState<FAQ[]>([]);
