@@ -4,11 +4,15 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
-import Index from "./pages/Index";
-import Configuration from "./pages/Configuration";
-import MCPDashboard from "./pages/MCPDashboard";
-import Support from "./pages/Support";
-import NotFound from "./pages/NotFound";
+import { Suspense, lazy } from "react";
+import LoadingSpinner from "@/components/LoadingSpinner";
+
+// Lazy load pages for better code splitting
+const Index = lazy(() => import("./pages/Index"));
+const Configuration = lazy(() => import("./pages/Configuration"));
+const MCPDashboard = lazy(() => import("./pages/MCPDashboard"));
+const Support = lazy(() => import("./pages/Support"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
@@ -19,13 +23,15 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/configuration" element={<Configuration />} />
-            <Route path="/mcp" element={<MCPDashboard />} />
-            <Route path="/support" element={<Support />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Suspense fallback={<LoadingSpinner size="lg" className="min-h-screen" />}>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/configuration" element={<Configuration />} />
+              <Route path="/mcp" element={<MCPDashboard />} />
+              <Route path="/support" element={<Support />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

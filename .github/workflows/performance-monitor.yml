@@ -1,0 +1,139 @@
+name: 📈 Performance Monitor
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Daily at midnight
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  lighthouse-audit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📦 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 📱 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: 📋 Install dependencies
+      run: npm ci
+      
+    - name: 🏗️ Build application
+      run: npm run build
+      
+    - name: 🔥 Lighthouse CI
+      run: |
+        npm install -g @lhci/cli@0.12.x
+        npm run preview &
+        sleep 10
+        lhci autorun
+      env:
+        LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+        
+    - name: 📊 Bundle size analysis
+      run: |
+        npm install -g webpack-bundle-analyzer
+        echo "📦 Analyzing bundle composition..."
+        
+        # Create a simple analysis
+        echo "# 📊 Bundle Analysis Report" > bundle-analysis.md
+        echo "Generated on: $(date)" >> bundle-analysis.md
+        echo "" >> bundle-analysis.md
+        
+        echo "## 📁 File Sizes" >> bundle-analysis.md
+        echo "\`\`\`" >> bundle-analysis.md
+        ls -lh dist/assets/ >> bundle-analysis.md
+        echo "\`\`\`" >> bundle-analysis.md
+        
+        echo "## 📈 Size Breakdown" >> bundle-analysis.md
+        echo "\`\`\`" >> bundle-analysis.md
+        du -h dist/assets/* | sort -hr >> bundle-analysis.md
+        echo "\`\`\`" >> bundle-analysis.md
+        
+    - name: 📤 Upload performance reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-reports
+        path: |
+          .lighthouseci/
+          bundle-analysis.md
+        retention-days: 30
+
+  size-limit-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📦 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 📱 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: 📋 Install dependencies
+      run: npm ci
+      
+    - name: 🏗️ Build and check size limits
+      run: |
+        npm run build
+        
+        # Define size limits (in KB)
+        MAX_JS_SIZE=500
+        MAX_CSS_SIZE=100
+        
+        # Check JavaScript bundle size
+        JS_SIZE=$(du -k dist/assets/*.js | cut -f1 | sort -nr | head -n1)
+        CSS_SIZE=$(du -k dist/assets/*.css | cut -f1 | sort -nr | head -n1)
+        
+        echo "📦 Current sizes:"
+        echo "JS: ${JS_SIZE}KB (limit: ${MAX_JS_SIZE}KB)"
+        echo "CSS: ${CSS_SIZE}KB (limit: ${MAX_CSS_SIZE}KB)"
+        
+        if [ $JS_SIZE -gt $MAX_JS_SIZE ]; then
+          echo "❌ JavaScript bundle exceeds size limit!"
+          exit 1
+        fi
+        
+        if [ $CSS_SIZE -gt $MAX_CSS_SIZE ]; then
+          echo "❌ CSS bundle exceeds size limit!"
+          exit 1
+        fi
+        
+        echo "✅ All bundles within size limits!"
+        
+    - name: 📝 Comment size report
+      uses: actions/github-script@v6
+      if: github.event_name == 'pull_request'
+      with:
+        script: |
+          const fs = require('fs');
+          const { execSync } = require('child_process');
+          
+          // Get current sizes
+          const jsSize = execSync("du -k dist/assets/*.js | cut -f1 | sort -nr | head -n1").toString().trim();
+          const cssSize = execSync("du -k dist/assets/*.css | cut -f1 | sort -nr | head -n1").toString().trim();
+          
+          const comment = `## 📊 Bundle Size Report
+          
+          | Asset | Size | Status |
+          |-------|------|--------|
+          | JavaScript | ${jsSize}KB | ${jsSize < 500 ? '✅' : '❌'} |
+          | CSS | ${cssSize}KB | ${cssSize < 100 ? '✅' : '❌'} |
+          
+          ${jsSize < 500 && cssSize < 100 ? '✅ All bundles within limits!' : '⚠️ Some bundles exceed size limits'}
+          `;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });

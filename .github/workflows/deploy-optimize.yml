@@ -1,0 +1,127 @@
+name: 🚀 Deploy & Optimize
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20.x'
+
+jobs:
+  build-optimized:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📦 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 📱 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: ⚡ Cache node modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.npm
+          node_modules
+        key: ${{ runner.os }}-build-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-
+          
+    - name: 📋 Install dependencies
+      run: npm ci --prefer-offline --no-audit --production=false
+      
+    - name: 🏗️ Build for production
+      run: |
+        npm run build
+        echo "📊 Build Statistics:"
+        du -sh dist/
+        ls -la dist/assets/
+        
+    - name: 🗜️ Compress assets
+      run: |
+        # Compress all assets with gzip and brotli
+        find dist/assets -name "*.js" -exec gzip -9 -k {} \;
+        find dist/assets -name "*.css" -exec gzip -9 -k {} \;
+        find dist/assets -name "*.js" -exec brotli -q 11 -k {} \;
+        find dist/assets -name "*.css" -exec brotli -q 11 -k {} \;
+        
+    - name: 🔍 Optimize images (if any)
+      run: |
+        if [ -d "dist/assets" ]; then
+          npx imagemin dist/assets/*.{png,jpg,jpeg,svg} --out-dir=dist/assets/ || true
+        fi
+        
+    - name: 📊 Generate build report
+      run: |
+        echo "# 📊 Build Report" > build-report.md
+        echo "**Build Date:** $(date)" >> build-report.md
+        echo "**Node Version:** ${{ env.NODE_VERSION }}" >> build-report.md
+        echo "**Commit:** ${{ github.sha }}" >> build-report.md
+        echo "" >> build-report.md
+        echo "## 📁 Asset Sizes" >> build-report.md
+        echo "\`\`\`" >> build-report.md
+        du -h dist/assets/* >> build-report.md
+        echo "\`\`\`" >> build-report.md
+        
+    - name: 📤 Upload optimized build
+      uses: actions/upload-artifact@v3
+      with:
+        name: optimized-build
+        path: |
+          dist/
+          build-report.md
+        retention-days: 30
+
+  deploy-preview:
+    needs: build-optimized
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: 📥 Download build
+      uses: actions/download-artifact@v3
+      with:
+        name: optimized-build
+        
+    - name: 🌐 Deploy to Netlify Preview
+      uses: nwtgck/actions-netlify@v2.0
+      with:
+        publish-dir: './dist'
+        production-branch: main
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        deploy-message: "Deploy from GitHub Actions"
+        enable-pull-request-comment: true
+        enable-commit-comment: true
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+  deploy-production:
+    needs: build-optimized
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: 📥 Download build
+      uses: actions/download-artifact@v3
+      with:
+        name: optimized-build
+        
+    - name: 🚀 Deploy to production
+      run: |
+        echo "🚀 Deploying to production..."
+        echo "📊 Final bundle analysis:"
+        du -sh dist/
+        # Add your production deployment steps here
+        # Example: Vercel, Netlify, AWS S3, etc.
+        
+    - name: 📢 Notify deployment
+      run: |
+        echo "✅ Deployment completed successfully!"
+        echo "🔗 Production URL: https://your-domain.com"

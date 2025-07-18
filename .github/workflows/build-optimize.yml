@@ -1,0 +1,76 @@
+name: 🚀 Build & Optimize
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-optimize:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - name: 📦 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 📱 Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        
+    - name: ⚡ Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+          
+    - name: 📋 Install dependencies
+      run: npm ci --prefer-offline --no-audit
+      
+    - name: 🔍 Lint code
+      run: npm run lint
+      
+    - name: 🏗️ Build application
+      run: npm run build
+      env:
+        NODE_ENV: production
+        
+    - name: 📊 Analyze bundle size
+      run: |
+        npm install -g bundlesize
+        echo "📦 Bundle Analysis:"
+        du -sh dist/assets/* | sort -hr
+        echo "🗜️ Gzipped sizes:"
+        gzip -c dist/assets/*.js | wc -c | awk '{print "JS: " $1/1024 "KB"}'
+        gzip -c dist/assets/*.css | wc -c | awk '{print "CSS: " $1/1024 "KB"}'
+        
+    - name: 🧪 Test build output
+      run: |
+        npm run preview &
+        sleep 5
+        curl -f http://localhost:4173 || exit 1
+        pkill -f "vite preview"
+        
+    - name: 📤 Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-files-${{ matrix.node-version }}
+        path: dist/
+        retention-days: 7
+        
+    - name: 🔥 Performance audit
+      run: |
+        npm install -g lighthouse-ci
+        npm run build
+        npm run preview &
+        sleep 5
+        lhci autorun --upload.target=temporary-public-storage --collect.url=http://localhost:4173
+      continue-on-error: true

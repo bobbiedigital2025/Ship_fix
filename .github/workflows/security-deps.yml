@@ -1,0 +1,90 @@
+name: 🔒 Security & Dependencies
+
+on:
+  schedule:
+    - cron: '0 2 * * 1' # Weekly on Monday at 2 AM
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  security-audit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📦 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 📱 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: 🔍 Security audit
+      run: |
+        npm audit --audit-level=moderate
+        npx audit-ci --moderate
+        
+    - name: 📊 License check
+      run: |
+        npm install -g license-checker
+        license-checker --summary
+        
+    - name: 🔄 Check for outdated packages
+      run: |
+        npm outdated || true
+        echo "📋 Packages that can be updated:"
+        npm outdated --json > outdated.json || true
+        
+    - name: 📤 Upload security report
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-reports
+        path: |
+          outdated.json
+          npm-audit.json
+        retention-days: 30
+
+  dependency-updates:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    
+    steps:
+    - name: 📦 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 📱 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: 🔄 Update dependencies
+      run: |
+        npm update
+        npm audit fix --force
+        
+    - name: 🧪 Test after updates
+      run: |
+        npm ci
+        npm run lint
+        npm run build
+        
+    - name: 📝 Create Pull Request
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: '🔄 Auto-update dependencies'
+        title: '🔄 Weekly Dependency Updates'
+        body: |
+          ## 🔄 Automated Dependency Updates
+          
+          This PR contains weekly dependency updates:
+          - Security patches applied
+          - Minor version updates
+          - Build and lint tests passed
+          
+          Please review changes before merging.
+        branch: auto-dependency-updates
+        delete-branch: true
