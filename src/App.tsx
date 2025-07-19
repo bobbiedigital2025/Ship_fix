@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Configuration from "./pages/Configuration";
 import MCPDashboard from "./pages/MCPDashboard";
 import Support from "./pages/Support";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/configuration" element={<Configuration />} />
             <Route path="/mcp" element={<MCPDashboard />} />
             <Route path="/support" element={<Support />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

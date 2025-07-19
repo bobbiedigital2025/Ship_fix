@@ -81,6 +81,10 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                 <UserCircle className="mr-2 h-4 w-4" />
                 Dashboard
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleNavigation('/profile')}>
+                <User className="mr-2 h-4 w-4" />
+                Profile
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleNavigation('/support')}>
                 <HelpCircle className="mr-2 h-4 w-4" />
                 Support Center

@@ -11,7 +11,8 @@ import {
   Users, 
   TrendingUp,
   Network,
-  HelpCircle
+  HelpCircle,
+  User
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -30,6 +31,11 @@ const navigation = [
   { name: 'MCP Integration', icon: Network, path: '/mcp' },
   { name: 'Support Center', icon: HelpCircle, path: '/support' },
   { name: 'Configuration', icon: Settings, path: '/configuration' },
+];
+
+// Add profile to a separate section  
+const userNavigation = [
+  { name: 'Profile', icon: User, path: '/profile' },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
@@ -61,27 +67,54 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         
         <ScrollArea className="flex-1">
           <nav className="p-4 space-y-2">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
-              return (
-                <Button
-                  key={item.name}
-                  variant={isActive ? 'default' : 'ghost'}
-                  className={cn(
-                    'w-full justify-start hover:bg-gray-100 transition-colors',
-                    isActive && 'bg-blue-50 text-blue-700 hover:bg-blue-100'
-                  )}
-                  onClick={() => {
-                    console.log(`🎯 Clicked on: ${item.name} -> ${item.path}`);
-                    handleNavigation(item.path);
-                  }}
-                >
-                  <Icon className="mr-3 h-4 w-4" />
-                  {item.name}
-                </Button>
-              );
-            })}
+            <div className="space-y-2 mb-6">
+              {navigation.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.path;
+                return (
+                  <Button
+                    key={item.name}
+                    variant={isActive ? 'default' : 'ghost'}
+                    className={cn(
+                      'w-full justify-start hover:bg-gray-100 transition-colors',
+                      isActive && 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                    )}
+                    onClick={() => {
+                      console.log(`🎯 Clicked on: ${item.name} -> ${item.path}`);
+                      handleNavigation(item.path);
+                    }}
+                  >
+                    <Icon className="mr-3 h-4 w-4" />
+                    {item.name}
+                  </Button>
+                );
+              })}
+            </div>
+            
+            <div className="border-t pt-4">
+              <div className="text-xs font-medium text-gray-500 mb-2 px-3">ACCOUNT</div>
+              {userNavigation.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.path;
+                return (
+                  <Button
+                    key={item.name}
+                    variant={isActive ? 'default' : 'ghost'}
+                    className={cn(
+                      'w-full justify-start hover:bg-gray-100 transition-colors',
+                      isActive && 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                    )}
+                    onClick={() => {
+                      console.log(`🎯 Clicked on: ${item.name} -> ${item.path}`);
+                      handleNavigation(item.path);
+                    }}
+                  >
+                    <Icon className="mr-3 h-4 w-4" />
+                    {item.name}
+                  </Button>
+                );
+              })}
+            </div>
           </nav>
         </ScrollArea>
       </div>

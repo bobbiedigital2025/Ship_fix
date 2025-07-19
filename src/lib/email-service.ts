@@ -71,26 +71,38 @@ export class EmailService {
     html: string;
     text: string;
   }): Promise<void> {
-    const resendApiKey = apiConfig.resend.getApiKey();
-    
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: this.FROM_EMAIL,
-        to: params.to,
-        subject: params.subject,
-        html: params.html,
-        text: params.text,
-      }),
-    });
+    try {
+      const resendApiKey = apiConfig.resend.getApiKey();
+      
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: this.FROM_EMAIL,
+          to: params.to,
+          subject: params.subject,
+          html: params.html,
+          text: params.text,
+        }),
+      });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`Failed to send email: ${error.message}`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(`Failed to send email: ${error.message}`);
+      }
+    } catch (error) {
+      // In development, just log the email instead of actually sending
+      if (import.meta.env.DEV) {
+        console.log('📧 Email would be sent (DEV MODE):');
+        console.log('To:', params.to);
+        console.log('Subject:', params.subject);
+        console.log('Content:', params.text.substring(0, 200) + '...');
+        return; // Don't throw error in development
+      }
+      throw error;
     }
   }
 

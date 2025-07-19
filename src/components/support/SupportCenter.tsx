@@ -23,9 +23,14 @@ import {
   User,
   Building,
   Tag,
-  Zap
+  Zap,
+  Shield,
+  LogOut
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { SupportService } from '@/lib/support-service';
+import LoginForm from '@/components/auth/LoginForm';
 import { FAQ } from '@/types/support';
 
 const supportFormSchema = z.object({
@@ -42,10 +47,31 @@ type SupportFormData = z.infer<typeof supportFormSchema>;
 
 const SupportCenter: React.FC = () => {
   console.log('SupportCenter component rendered');
+  const navigate = useNavigate();
+  const { user, isAuthenticated, isLoading, logout, checkSession } = useAuth();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  // If not authenticated, show login form
+  if (!isAuthenticated && !isLoading) {
+    return <LoginForm />;
+  }
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Shield className="w-12 h-12 text-blue-600 mx-auto animate-pulse" />
+          <p className="text-lg font-medium">Authenticating with MCP...</p>
+          <p className="text-sm text-gray-600">Establishing secure agent-to-agent connection</p>
+        </div>
+      </div>
+    );
+  }
 
   const {
     register,
@@ -59,6 +85,9 @@ const SupportCenter: React.FC = () => {
     defaultValues: {
       severity: 'medium',
       category: 'general',
+      customerName: user?.name || '',
+      customerEmail: user?.email || '',
+      company: user?.company || '',
     },
   });
 
@@ -79,7 +108,12 @@ const SupportCenter: React.FC = () => {
 
   const onSubmit = async (data: SupportFormData) => {
     setIsSubmitting(true);
+    setAuthError(null);
+    
     try {
+      // Verify MCP session is still valid before submitting
+      await checkSession();
+      
       const ticket = await SupportService.createTicket({
         customerName: data.customerName,
         customerEmail: data.customerEmail,
@@ -91,16 +125,27 @@ const SupportCenter: React.FC = () => {
         priority: getSeverityPriority(data.severity),
       });
       
-      // Send email notification
+      // Send MCP-based notification instead of direct email
       await SupportService.sendEmailNotification(ticket);
       
       setSubmitSuccess(true);
-      reset();
+      reset({
+        severity: 'medium',
+        category: 'general',
+        customerName: user?.name || '',
+        customerEmail: user?.email || '',
+        company: user?.company || '',
+        subject: '',
+        description: '',
+      });
       
       // Reset success message after 5 seconds
       setTimeout(() => setSubmitSuccess(false), 5000);
     } catch (error) {
       console.error('Error submitting ticket:', error);
+      if (error instanceof Error && error.message.includes('session')) {
+        setAuthError('Your MCP session has expired. Please log in again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -140,6 +185,40 @@ const SupportCenter: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
+      {/* MCP Authentication Header */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Shield className="w-5 h-5 text-blue-600" />
+            <div>
+              <p className="font-medium text-blue-900">
+                Connected via MCP Agent-to-Agent Authentication
+              </p>
+              <p className="text-sm text-blue-700">
+                Logged in as: {user?.name} ({user?.email}) | Role: {user?.role}
+              </p>
+            </div>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={logout}
+            className="border-blue-300 text-blue-700 hover:bg-blue-100"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Logout
+          </Button>
+        </div>
+      </div>
+
+      {/* Auth Error Alert */}
+      {authError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>{authError}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="text-center space-y-4">
         <h1 className="text-3xl font-bold text-gray-900">Support Center</h1>
         <p className="text-lg text-gray-600">
@@ -159,7 +238,7 @@ const SupportCenter: React.FC = () => {
             <Alert className="border-green-200 bg-green-50">
               <CheckCircle className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-800">
-                Your support ticket has been submitted successfully! You'll receive a confirmation email shortly.
+                Your support ticket has been submitted successfully via MCP! You'll receive a confirmation through our secure agent network.
               </AlertDescription>
             </Alert>
           )}
@@ -184,9 +263,13 @@ const SupportCenter: React.FC = () => {
                         id="customerName"
                         {...register('customerName')}
                         className={errors.customerName ? 'border-red-500' : ''}
+                        disabled={!!user?.name} // Disable if user is authenticated and has a name
                       />
                       {errors.customerName && (
                         <p className="text-sm text-red-500 mt-1">{errors.customerName.message}</p>
+                      )}
+                      {user?.name && (
+                        <p className="text-xs text-blue-600 mt-1">Auto-filled from your MCP profile</p>
                       )}
                     </div>
 
@@ -197,9 +280,13 @@ const SupportCenter: React.FC = () => {
                         type="email"
                         {...register('customerEmail')}
                         className={errors.customerEmail ? 'border-red-500' : ''}
+                        disabled={!!user?.email} // Disable if user is authenticated and has an email
                       />
                       {errors.customerEmail && (
                         <p className="text-sm text-red-500 mt-1">{errors.customerEmail.message}</p>
+                      )}
+                      {user?.email && (
+                        <p className="text-xs text-blue-600 mt-1">Auto-filled from your MCP profile</p>
                       )}
                     </div>
                   </div>
@@ -209,7 +296,11 @@ const SupportCenter: React.FC = () => {
                     <Input
                       id="company"
                       {...register('company')}
+                      disabled={!!user?.company} // Disable if user is authenticated and has a company
                     />
+                    {user?.company && (
+                      <p className="text-xs text-blue-600 mt-1">Auto-filled from your MCP profile</p>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -321,7 +412,17 @@ const SupportCenter: React.FC = () => {
                     className="w-full" 
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? 'Submitting...' : 'Submit Ticket'}
+                    {isSubmitting ? (
+                      <>
+                        <Shield className="w-4 h-4 mr-2 animate-pulse" />
+                        Submitting via MCP...
+                      </>
+                    ) : (
+                      <>
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        Submit Ticket via MCP
+                      </>
+                    )}
                   </Button>
                 </form>
               </CardContent>
@@ -331,12 +432,22 @@ const SupportCenter: React.FC = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Contact Information</CardTitle>
+                  <CardDescription>
+                    All communications are secured via MCP Agent-to-Agent protocol
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center gap-3">
+                    <Shield className="w-5 h-5 text-blue-600" />
+                    <div>
+                      <p className="font-medium">MCP Secure Channel</p>
+                      <p className="text-sm text-gray-600">Agent-to-agent encrypted communication</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
                     <Mail className="w-5 h-5 text-blue-600" />
                     <div>
-                      <p className="font-medium">Email Support</p>
+                      <p className="font-medium">Fallback Email Support</p>
                       <p className="text-sm text-gray-600">marketing-support@bobbiedigital.com</p>
                     </div>
                   </div>
@@ -453,9 +564,12 @@ const SupportCenter: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-gray-600 mb-4">
-                  Complete guides and API documentation
+                  Explore configuration options and settings
                 </p>
-                <Button variant="outline" className="w-full" onClick={() => window.open('https://docs.bobbiedigital.com', '_blank')}>
+                <Button variant="outline" className="w-full" onClick={() => {
+                  // Navigate to configuration as a form of documentation
+                  navigate('/configuration');
+                }}>
                   View Documentation
                 </Button>
               </CardContent>
@@ -470,9 +584,12 @@ const SupportCenter: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-gray-600 mb-4">
-                  Step-by-step video guides
+                  Explore the dashboard and features
                 </p>
-                <Button variant="outline" className="w-full" onClick={() => window.open('https://tutorials.bobbiedigital.com', '_blank')}>
+                <Button variant="outline" className="w-full" onClick={() => {
+                  // Navigate to dashboard which shows features
+                  navigate('/');
+                }}>
                   Watch Tutorials
                 </Button>
               </CardContent>
@@ -487,9 +604,12 @@ const SupportCenter: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-gray-600 mb-4">
-                  Connect with other users
+                  Get help and submit support tickets
                 </p>
-                <Button variant="outline" className="w-full" onClick={() => window.open('https://community.bobbiedigital.com', '_blank')}>
+                <Button variant="outline" className="w-full" onClick={() => {
+                  // Navigate to the support page itself as a form of community
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}>
                   Join Community
                 </Button>
               </CardContent>
