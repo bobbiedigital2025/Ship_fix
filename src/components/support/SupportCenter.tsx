@@ -489,7 +489,7 @@ const SupportCenter: React.FC = () => {
                 <p className="text-sm text-gray-600 mb-4">
                   Connect with other users
                 </p>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={() => window.open('https://community.bobbiedigital.com', '_blank')}>
                   Join Community
                 </Button>
               </CardContent>
