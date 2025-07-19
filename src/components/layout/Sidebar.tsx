@@ -37,7 +37,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
 
   const handleNavigation = (path: string) => {
+    console.log('🔗 Sidebar navigation clicked, path:', path);
+    console.log('🌍 Current location:', location.pathname);
     navigate(path);
+    console.log('✅ Navigation called, closing sidebar');
     onClose();
   };
 
@@ -66,10 +69,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   key={item.name}
                   variant={isActive ? 'default' : 'ghost'}
                   className={cn(
-                    'w-full justify-start',
+                    'w-full justify-start hover:bg-gray-100 transition-colors',
                     isActive && 'bg-blue-50 text-blue-700 hover:bg-blue-100'
                   )}
-                  onClick={() => handleNavigation(item.path)}
+                  onClick={() => {
+                    console.log(`🎯 Clicked on: ${item.name} -> ${item.path}`);
+                    handleNavigation(item.path);
+                  }}
                 >
                   <Icon className="mr-3 h-4 w-4" />
                   {item.name}

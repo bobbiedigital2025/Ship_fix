@@ -7,6 +7,7 @@ import SupportCenter from '@/components/support/SupportCenter';
 import AdminSupportDashboard from '@/components/support/AdminSupportDashboard';
 
 const SupportPage: React.FC = () => {
+  console.log('🏠 Support page component rendered!');
   return (
     <AppProvider>
       <PageLayout>

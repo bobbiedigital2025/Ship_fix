@@ -6,14 +6,21 @@ interface EnvVars {
   STRIPE_SECRET_KEY: string;
   STRIPE_RESTRICTED_KEY: string;
   RESEND_API_KEY: string;
-  SUPPORT_EMAIL: string;
+  VITE_SUPPORT_EMAIL: string;
 }
 
 // Function to get environment variable with validation
-export function getEnvVar(key: keyof EnvVars): string {
+export function getEnvVar(key: keyof EnvVars, fallback?: string): string {
   const value = import.meta.env[key];
   
   if (!value) {
+    if (fallback !== undefined) {
+      return fallback;
+    }
+    if (import.meta.env.DEV) {
+      console.warn(`Missing environment variable: ${key}, using fallback`);
+      return `dev_${key.toLowerCase()}`;
+    }
     throw new Error(`Missing required environment variable: ${key}`);
   }
   
@@ -25,22 +32,22 @@ export const apiConfig = {
   // Stripe configuration
   stripe: {
     // This is safe to use in client-side code (publishable key)
-    publishableKey: getEnvVar('VITE_STRIPE_PUBLISHABLE_KEY'),
+    publishableKey: getEnvVar('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_dev_fallback'),
     
     // These should only be used in server-side code or secure contexts
-    getSecretKey: () => getEnvVar('STRIPE_SECRET_KEY'),
-    getRestrictedKey: () => getEnvVar('STRIPE_RESTRICTED_KEY'),
+    getSecretKey: () => getEnvVar('STRIPE_SECRET_KEY', 'sk_dev_fallback'),
+    getRestrictedKey: () => getEnvVar('STRIPE_RESTRICTED_KEY', 'rk_dev_fallback'),
   },
   
   // Resend email service configuration
   resend: {
     // This should only be used in server-side code or secure contexts
-    getApiKey: () => getEnvVar('RESEND_API_KEY'),
+    getApiKey: () => getEnvVar('RESEND_API_KEY', 'resend_dev_fallback'),
   },
   
   // Support configuration
   support: {
-    email: getEnvVar('SUPPORT_EMAIL'),
+    email: getEnvVar('VITE_SUPPORT_EMAIL', 'support@localhost.dev'),
   },
 };
 
