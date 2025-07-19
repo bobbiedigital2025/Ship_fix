@@ -455,7 +455,7 @@ const SupportCenter: React.FC = () => {
                 <p className="text-sm text-gray-600 mb-4">
                   Complete guides and API documentation
                 </p>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={() => window.open('https://docs.bobbiedigital.com', '_blank')}>
                   View Documentation
                 </Button>
               </CardContent>
@@ -472,7 +472,7 @@ const SupportCenter: React.FC = () => {
                 <p className="text-sm text-gray-600 mb-4">
                   Step-by-step video guides
                 </p>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={() => window.open('https://tutorials.bobbiedigital.com', '_blank')}>
                   Watch Tutorials
                 </Button>
               </CardContent>
