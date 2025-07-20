@@ -47,22 +47,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const isValid = await MCPAuthService.validateSession();
       
       if (isValid) {
-        // Get user info from session storage or make MCP call
+        // Get user info from MCP session - in production this would come from MCP server
         const storedUser = localStorage.getItem('mcp_user_info');
         if (storedUser) {
           setUser(JSON.parse(storedUser));
-        } else {
-          // For development, create a mock user
-          const mockUser: User = {
-            id: 'dev-user-1',
-            name: 'Demo User',
-            email: 'demo@bobbiedigital.com',
-            role: 'admin',
-            company: 'Bobbie Digital',
-            permissions: ['read', 'write', 'admin', 'support']
-          };
-          setUser(mockUser);
-          localStorage.setItem('mcp_user_info', JSON.stringify(mockUser));
         }
       } else {
         setUser(null);
@@ -70,39 +58,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error('Session check failed:', error);
-      // For development, auto-authenticate
-      await autoAuthenticate();
+      setUser(null);
+      localStorage.removeItem('mcp_user_info');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const autoAuthenticate = async () => {
-    try {
-      // Auto-authenticate in development mode
-      const agentId = 'supply-chain-platform-user';
-      const credentials = {
-        appId: 'supply-chain-platform',
-        userId: 'demo-user',
-        environment: 'development'
-      };
-
-      await MCPAuthService.authenticateAgent(agentId, credentials);
-      
-      const mockUser: User = {
-        id: 'dev-user-1',
-        name: 'Demo User',
-        email: 'demo@bobbiedigital.com',
-        role: 'admin',
-        company: 'Bobbie Digital',
-        permissions: ['read', 'write', 'admin', 'support']
-      };
-      
-      setUser(mockUser);
-      localStorage.setItem('mcp_user_info', JSON.stringify(mockUser));
-    } catch (error) {
-      console.warn('Auto-authentication failed:', error);
-      // Continue without authentication for development
     }
   };
 
@@ -110,7 +69,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       
-      // For MCP A2A authentication, we use agent credentials
+      // Check if this is admin login
+      const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@yourcompany.com';
+      const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'admin123';
+      
+      if (email === adminEmail && password === adminPassword) {
+        // Admin login
+        const adminUser: User = {
+          id: 'admin-1',
+          name: 'Administrator',
+          email: adminEmail,
+          role: 'admin',
+          company: import.meta.env.VITE_COMPANY_NAME || 'Your Company',
+          permissions: ['read', 'write', 'admin', 'support', 'manage_users', 'billing']
+        };
+        
+        setUser(adminUser);
+        localStorage.setItem('mcp_user_info', JSON.stringify(adminUser));
+        return;
+      }
+      
+      // For MCP customer authentication
       const agentId = `user-${email}`;
       const credentials = {
         email,
@@ -121,16 +100,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       await MCPAuthService.authenticateAgent(agentId, credentials);
       
-      // In a real implementation, this would come from the MCP server
+      // Customer user (in production, this would come from MCP server)
       const user: User = {
         id: email,
         name: email.split('@')[0],
         email,
-        role: email.includes('admin') ? 'admin' : 'user',
-        company: 'Demo Company',
-        permissions: email.includes('admin') 
-          ? ['read', 'write', 'admin', 'support'] 
-          : ['read', 'write']
+        role: 'user',
+        company: 'Customer Company',
+        permissions: ['read', 'write', 'manage_suppliers', 'manage_shippers', 'manage_inventory']
       };
       
       setUser(user);

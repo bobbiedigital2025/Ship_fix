@@ -15,32 +15,52 @@ import {
   User
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { usePermissions } from '@/components/auth/RoleGuard';
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const navigation = [
-  { name: 'Dashboard', icon: BarChart3, path: '/' },
-  { name: 'Tracking', icon: Truck, path: '/' },
-  { name: 'Inventory', icon: Package, path: '/' },
-  { name: 'Alerts', icon: AlertTriangle, path: '/' },
-  { name: 'Suppliers', icon: Users, path: '/' },
-  { name: 'Analytics', icon: TrendingUp, path: '/' },
-  { name: 'MCP Integration', icon: Network, path: '/mcp' },
-  { name: 'Support Center', icon: HelpCircle, path: '/support' },
-  { name: 'Configuration', icon: Settings, path: '/configuration' },
-];
-
-// Add profile to a separate section  
-const userNavigation = [
-  { name: 'Profile', icon: User, path: '/profile' },
-];
-
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAdmin, isCustomer } = usePermissions();
+
+  // Base navigation for all users
+  const baseNavigation = [
+    { name: 'Dashboard', icon: BarChart3, path: '/' },
+    { name: 'Configuration', icon: Settings, path: '/configuration' },
+    { name: 'Support Center', icon: HelpCircle, path: '/support' },
+  ];
+
+  // Customer-specific navigation
+  const customerNavigation = [
+    { name: 'Tracking', icon: Truck, path: '/' },
+    { name: 'Inventory', icon: Package, path: '/' },
+    { name: 'Orders', icon: Users, path: '/' },
+  ];
+
+  // Admin-only navigation
+  const adminNavigation = [
+    { name: 'Tracking', icon: Truck, path: '/' },
+    { name: 'Inventory', icon: Package, path: '/' },
+    { name: 'Alerts', icon: AlertTriangle, path: '/' },
+    { name: 'Suppliers', icon: Users, path: '/' },
+    { name: 'Analytics', icon: TrendingUp, path: '/' },
+    { name: 'MCP Integration', icon: Network, path: '/mcp' },
+  ];
+
+  // Build navigation based on user role
+  const navigation = [
+    ...baseNavigation,
+    ...(isAdmin() ? adminNavigation : customerNavigation)
+  ];
+
+  // Add profile to a separate section  
+  const userNavigation = [
+    { name: 'Profile', icon: User, path: '/profile' },
+  ];
 
   const handleNavigation = (path: string) => {
     console.log('🔗 Sidebar navigation clicked, path:', path);
