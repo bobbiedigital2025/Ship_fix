@@ -54,7 +54,7 @@ For licensing inquiries, subscription information, or permission requests:
 
 **Bobbie Digital**  
 Founder: Bobbie Gray  
-Email: [licensing@bobbiedigital.com]  
+Email: [marketing-support@bobbiedigital.com]  
 Website: [www.bobbiedigital.com]  
 
 ---
