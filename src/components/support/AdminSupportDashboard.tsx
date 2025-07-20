@@ -34,11 +34,17 @@ import {
   Building,
   Star,
   Calendar,
-  MessageSquare
+  MessageSquare,
+  RefreshCw,
+  Edit,
+  Trash2,
+  Eye,
+  Bell
 } from 'lucide-react';
 import { SupportService } from '@/lib/support-service';
 import { SupportTicket, SupportStats, CustomerProfile } from '@/types/support';
 import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 const SEVERITY_COLORS = {
   critical: '#ef4444',
@@ -53,11 +59,21 @@ const AdminSupportDashboard: React.FC = () => {
   const [selectedSeverity, setSelectedSeverity] = useState<string>('all');
   const [customersBySeverity, setCustomersBySeverity] = useState<CustomerProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const { toast } = useToast();
 
   useEffect(() => {
     loadData();
+    
+    // Auto-refresh every 30 seconds to catch new tickets
+    const interval = setInterval(() => {
+      refreshData();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -75,10 +91,84 @@ const AdminSupportDashboard: React.FC = () => {
       ]);
       setTickets(ticketsData);
       setStats(statsData);
+      setLastRefresh(new Date());
+      
+      // Show notification for new tickets
+      const newTickets = ticketsData.filter(ticket => 
+        ticket.createdAt.getTime() > (lastRefresh.getTime() - 60000) // Last minute
+      );
+      
+      if (newTickets.length > 0 && !loading) {
+        toast({
+          title: `${newTickets.length} New Ticket${newTickets.length > 1 ? 's' : ''}`,
+          description: `${newTickets.map(t => t.subject).join(', ')}`,
+          duration: 5000,
+        });
+      }
     } catch (error) {
       console.error('Error loading support data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load support data",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const refreshData = async () => {
+    try {
+      setRefreshing(true);
+      await loadData();
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleStatusChange = async (ticketId: string, newStatus: 'open' | 'in-progress' | 'resolved' | 'closed') => {
+    try {
+      const updatedTicket = await SupportService.updateTicketStatus(ticketId, newStatus);
+      if (updatedTicket) {
+        setTickets(prev => prev.map(ticket => 
+          ticket.id === ticketId ? updatedTicket : ticket
+        ));
+        toast({
+          title: "Status Updated",
+          description: `Ticket ${ticketId} status changed to ${newStatus}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error updating ticket status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update ticket status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteTicket = async (ticketId: string) => {
+    if (!confirm('Are you sure you want to delete this ticket?')) return;
+    
+    try {
+      const success = await SupportService.deleteTicket(ticketId);
+      if (success) {
+        setTickets(prev => prev.filter(ticket => ticket.id !== ticketId));
+        toast({
+          title: "Ticket Deleted",
+          description: `Ticket ${ticketId} has been deleted`,
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting ticket:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete ticket",
+        variant: "destructive",
+      });
     }
   };
 
@@ -224,21 +314,42 @@ const AdminSupportDashboard: React.FC = () => {
         <TabsContent value="tickets" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Support Tickets</CardTitle>
-              <CardDescription>
-                Manage and track all customer support tickets
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    Support Tickets
+                    <Badge variant="outline">{filteredTickets.length} tickets</Badge>
+                    {refreshing && <RefreshCw className="w-4 h-4 animate-spin text-blue-500" />}
+                  </CardTitle>
+                  <CardDescription>
+                    Manage and track customer support requests - Real-time updates
+                    <span className="ml-2 text-xs text-gray-500">
+                      Last updated: {format(lastRefresh, 'HH:mm:ss')}
+                    </span>
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={refreshData} variant="outline" size="sm" disabled={refreshing}>
+                    <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <Bell className="w-4 h-4 mr-2" />
+                    Notifications
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-4 mb-4">
+              <div className="flex gap-4 mb-6">
                 <div className="flex-1">
                   <div className="relative">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Search tickets..."
+                      placeholder="Search tickets by customer, email, or subject..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+                      className="pl-8"
                     />
                   </div>
                 </div>
@@ -270,52 +381,103 @@ const AdminSupportDashboard: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredTickets.map((ticket) => (
-                      <TableRow key={ticket.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{ticket.customerName}</div>
-                            <div className="text-sm text-gray-500">{ticket.customerEmail}</div>
-                            {ticket.company && (
-                              <div className="text-sm text-gray-500">{ticket.company}</div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>{ticket.subject}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{ticket.category}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {getSeverityIcon(ticket.severity)}
-                            <Badge className={SupportService.getPriorityColor(ticket.severity)}>
-                              {ticket.severity}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={SupportService.getStatusColor(ticket.status)}>
-                            {ticket.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {format(new Date(ticket.createdAt), 'MMM dd, yyyy')}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="outline">
-                              View
-                            </Button>
-                            <Button size="sm" variant="outline">
-                              Reply
-                            </Button>
+                    {filteredTickets.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8">
+                          <div className="text-muted-foreground">
+                            {loading ? 'Loading tickets...' : 'No tickets found matching your criteria'}
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      filteredTickets.map((ticket) => (
+                        <TableRow key={ticket.id} className="hover:bg-muted/50">
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{ticket.customerName}</div>
+                              <div className="text-sm text-gray-500">{ticket.customerEmail}</div>
+                              {ticket.company && (
+                                <div className="text-sm text-gray-500">{ticket.company}</div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="max-w-xs">
+                              <div className="font-medium truncate">{ticket.subject}</div>
+                              <div className="text-xs text-gray-500">ID: {ticket.id}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{ticket.category}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {getSeverityIcon(ticket.severity)}
+                              <Badge 
+                                variant={ticket.severity === 'critical' || ticket.severity === 'high' ? 'destructive' : 'secondary'}
+                              >
+                                {ticket.severity}
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Select 
+                              value={ticket.status} 
+                              onValueChange={(value) => handleStatusChange(ticket.id, value as any)}
+                            >
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="open">Open</SelectItem>
+                                <SelectItem value="in-progress">In Progress</SelectItem>
+                                <SelectItem value="resolved">Resolved</SelectItem>
+                                <SelectItem value="closed">Closed</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              {format(new Date(ticket.createdAt), 'MMM dd, yyyy')}
+                              <div className="text-xs text-gray-500">
+                                {format(new Date(ticket.createdAt), 'HH:mm')}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button size="sm" variant="outline" title="View Details">
+                                <Eye className="w-3 h-3" />
+                              </Button>
+                              <Button size="sm" variant="outline" title="Edit Ticket">
+                                <Edit className="w-3 h-3" />
+                              </Button>
+                              <Button size="sm" variant="outline" title="Send Email">
+                                <Mail className="w-3 h-3" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                title="Delete Ticket"
+                                onClick={() => handleDeleteTicket(ticket.id)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </div>
+              
+              {filteredTickets.length > 0 && (
+                <div className="mt-4 text-sm text-muted-foreground">
+                  Showing {filteredTickets.length} of {tickets.length} tickets
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
