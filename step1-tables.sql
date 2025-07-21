@@ -1,11 +1,10 @@
--- Supabase SQL Schema - Basic Version (No RLS)
--- Run this first to create core tables without complexity
+-- STEP 1: Create tables only (no triggers, no sample data)
+-- Copy and run this first
 
--- Create customers table (main contact storage)
 CREATE TABLE IF NOT EXISTS customers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL CHECK (length(trim(name)) > 0),
-    email TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
     company TEXT,
     phone TEXT,
     address TEXT,
@@ -29,7 +28,6 @@ CREATE TABLE IF NOT EXISTS customers (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create support_tickets table
 CREATE TABLE IF NOT EXISTS support_tickets (
     id TEXT PRIMARY KEY DEFAULT ('TICKET-' || EXTRACT(EPOCH FROM NOW()) || '-' || substr(md5(random()::text), 1, 9)),
     customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
@@ -49,7 +47,6 @@ CREATE TABLE IF NOT EXISTS support_tickets (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create support_responses table
 CREATE TABLE IF NOT EXISTS support_responses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     ticket_id TEXT REFERENCES support_tickets(id) ON DELETE CASCADE,
@@ -62,7 +59,6 @@ CREATE TABLE IF NOT EXISTS support_responses (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create support_faqs table
 CREATE TABLE IF NOT EXISTS support_faqs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     question TEXT NOT NULL,
@@ -75,7 +71,6 @@ CREATE TABLE IF NOT EXISTS support_faqs (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create email_logs table
 CREATE TABLE IF NOT EXISTS email_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
@@ -93,7 +88,6 @@ CREATE TABLE IF NOT EXISTS email_logs (
     clicked_at TIMESTAMP WITH TIME ZONE
 );
 
--- Create contact_interactions table
 CREATE TABLE IF NOT EXISTS contact_interactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id UUID REFERENCES customers(id) ON DELETE CASCADE,
@@ -107,7 +101,6 @@ CREATE TABLE IF NOT EXISTS contact_interactions (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create user_registrations table
 CREATE TABLE IF NOT EXISTS user_registrations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id UUID REFERENCES customers(id) ON DELETE CASCADE,
@@ -133,68 +126,4 @@ CREATE TABLE IF NOT EXISTS user_registrations (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create basic indexes
-CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
-CREATE INDEX IF NOT EXISTS idx_customers_company ON customers(company);
-CREATE INDEX IF NOT EXISTS idx_support_tickets_status ON support_tickets(status);
-CREATE INDEX IF NOT EXISTS idx_support_tickets_customer_email ON support_tickets(customer_email);
-CREATE INDEX IF NOT EXISTS idx_support_tickets_created_at ON support_tickets(created_at);
-CREATE INDEX IF NOT EXISTS idx_support_responses_ticket_id ON support_responses(ticket_id);
-CREATE INDEX IF NOT EXISTS idx_support_responses_created_at ON support_responses(created_at);
-CREATE INDEX IF NOT EXISTS idx_contact_interactions_customer_id ON contact_interactions(customer_id);
-CREATE INDEX IF NOT EXISTS idx_email_logs_customer_id ON email_logs(customer_id);
-
--- Create GIN index for tags array (better performance for array operations)
-CREATE INDEX IF NOT EXISTS idx_customers_tags ON customers USING GIN(tags);
-
--- Function to automatically update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_modified_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Add triggers for automatic updated_at updates
-CREATE TRIGGER update_customers_modtime
-    BEFORE UPDATE ON customers
-    FOR EACH ROW
-    EXECUTE FUNCTION update_modified_column();
-
-CREATE TRIGGER update_support_tickets_modtime
-    BEFORE UPDATE ON support_tickets
-    FOR EACH ROW
-    EXECUTE FUNCTION update_modified_column();
-
-CREATE TRIGGER update_support_faqs_modtime
-    BEFORE UPDATE ON support_faqs
-    FOR EACH ROW
-    EXECUTE FUNCTION update_modified_column();
-
--- Insert sample data
-INSERT INTO customers (name, email, company, tier) VALUES
-    ('John Doe', 'john@acme.com', 'Acme Corp', 'enterprise'),
-    ('Jane Smith', 'jane@startup.com', 'StartupCo', 'premium'),
-    ('Bob Wilson', 'bob@enterprise.com', 'Enterprise Ltd', 'enterprise'),
-    ('Alice Johnson', 'alice@techstart.io', 'TechStart', 'basic'),
-    ('Mike Davis', 'mike@consulting.com', 'Davis Consulting', 'premium')
-ON CONFLICT (email) DO NOTHING;
-
--- Insert sample FAQs
-INSERT INTO support_faqs (question, answer, category) VALUES
-('How do I integrate the API?', 'You can integrate our API by following the documentation in our developer portal. Start with authentication, then explore our endpoints.', 'integration'),
-('What are the billing cycles?', 'We offer monthly and annual billing cycles. Annual subscriptions come with a 15% discount.', 'billing'),
-('How do I reset my password?', 'Click on the "Forgot Password" link on the login page and follow the instructions sent to your email.', 'account'),
-('What browsers are supported?', 'We support all modern browsers including Chrome, Firefox, Safari, and Edge. Internet Explorer is not supported.', 'technical'),
-('How do I upgrade my plan?', 'You can upgrade your plan from the billing section in your account settings. Changes take effect immediately.', 'billing'),
-('What is your SLA for support response?', 'Enterprise customers receive responses within 4 hours, Premium within 24 hours, and Basic within 48 hours.', 'general')
-ON CONFLICT (question) DO NOTHING;
-
--- Create a sample support ticket
-INSERT INTO support_tickets (customer_name, customer_email, company, category, severity, subject, description) VALUES
-('John Doe', 'john@acme.com', 'Acme Corp', 'technical', 'medium', 'API Authentication Issue', 'Having trouble authenticating with the API. Getting 401 errors consistently.')
-ON CONFLICT (id) DO NOTHING;
-
--- Success message
-SELECT 'Ship_fix Basic Database Schema Applied Successfully! 🎉' as status;
+SELECT 'Step 1 Complete: All tables created! ✅' as status;

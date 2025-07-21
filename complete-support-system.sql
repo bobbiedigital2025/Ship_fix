@@ -1,37 +1,9 @@
--- Supabase SQL Schema - Basic Version (No RLS)
--- Run this first to create core tables without complexity
-
--- Create customers table (main contact storage)
-CREATE TABLE IF NOT EXISTS customers (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL CHECK (length(trim(name)) > 0),
-    email TEXT UNIQUE NOT NULL,
-    company TEXT,
-    phone TEXT,
-    address TEXT,
-    city TEXT,
-    state TEXT,
-    zip_code TEXT,
-    country TEXT DEFAULT 'US',
-    tier TEXT DEFAULT 'basic' CHECK (tier IN ('basic', 'premium', 'enterprise')),
-    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'suspended')),
-    total_tickets INTEGER DEFAULT 0 CHECK (total_tickets >= 0),
-    open_tickets INTEGER DEFAULT 0 CHECK (open_tickets >= 0),
-    avg_response_time DECIMAL DEFAULT 0 CHECK (avg_response_time >= 0),
-    satisfaction_score DECIMAL DEFAULT 0 CHECK (satisfaction_score >= 0 AND satisfaction_score <= 5),
-    join_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    last_activity TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    last_login TIMESTAMP WITH TIME ZONE,
-    registration_source TEXT DEFAULT 'app',
-    notes TEXT,
-    tags TEXT[],
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- Complete the Ship_fix support system - Add remaining tables
+-- Run this after customers table is working
 
 -- Create support_tickets table
 CREATE TABLE IF NOT EXISTS support_tickets (
-    id TEXT PRIMARY KEY DEFAULT ('TICKET-' || EXTRACT(EPOCH FROM NOW()) || '-' || substr(md5(random()::text), 1, 9)),
+    id TEXT PRIMARY KEY DEFAULT ('TICKET-' || EXTRACT(EPOCH FROM NOW()) || '-' || substr(md5(random()::text), 1, 6)),
     customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
     customer_name TEXT NOT NULL,
     customer_email TEXT NOT NULL,
@@ -107,35 +79,7 @@ CREATE TABLE IF NOT EXISTS contact_interactions (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create user_registrations table
-CREATE TABLE IF NOT EXISTS user_registrations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    customer_id UUID REFERENCES customers(id) ON DELETE CASCADE,
-    email TEXT NOT NULL,
-    name TEXT NOT NULL,
-    company TEXT,
-    phone TEXT,
-    registration_type TEXT DEFAULT 'standard',
-    registration_source TEXT DEFAULT 'app',
-    utm_source TEXT,
-    utm_medium TEXT,
-    utm_campaign TEXT,
-    referrer_url TEXT,
-    ip_address TEXT,
-    user_agent TEXT,
-    device_type TEXT,
-    browser TEXT,
-    location_country TEXT,
-    location_city TEXT,
-    email_verified BOOLEAN DEFAULT FALSE,
-    terms_accepted BOOLEAN DEFAULT FALSE,
-    marketing_consent BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Create basic indexes
-CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
-CREATE INDEX IF NOT EXISTS idx_customers_company ON customers(company);
+-- Add indexes for performance
 CREATE INDEX IF NOT EXISTS idx_support_tickets_status ON support_tickets(status);
 CREATE INDEX IF NOT EXISTS idx_support_tickets_customer_email ON support_tickets(customer_email);
 CREATE INDEX IF NOT EXISTS idx_support_tickets_created_at ON support_tickets(created_at);
@@ -144,44 +88,7 @@ CREATE INDEX IF NOT EXISTS idx_support_responses_created_at ON support_responses
 CREATE INDEX IF NOT EXISTS idx_contact_interactions_customer_id ON contact_interactions(customer_id);
 CREATE INDEX IF NOT EXISTS idx_email_logs_customer_id ON email_logs(customer_id);
 
--- Create GIN index for tags array (better performance for array operations)
-CREATE INDEX IF NOT EXISTS idx_customers_tags ON customers USING GIN(tags);
-
--- Function to automatically update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_modified_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Add triggers for automatic updated_at updates
-CREATE TRIGGER update_customers_modtime
-    BEFORE UPDATE ON customers
-    FOR EACH ROW
-    EXECUTE FUNCTION update_modified_column();
-
-CREATE TRIGGER update_support_tickets_modtime
-    BEFORE UPDATE ON support_tickets
-    FOR EACH ROW
-    EXECUTE FUNCTION update_modified_column();
-
-CREATE TRIGGER update_support_faqs_modtime
-    BEFORE UPDATE ON support_faqs
-    FOR EACH ROW
-    EXECUTE FUNCTION update_modified_column();
-
--- Insert sample data
-INSERT INTO customers (name, email, company, tier) VALUES
-    ('John Doe', 'john@acme.com', 'Acme Corp', 'enterprise'),
-    ('Jane Smith', 'jane@startup.com', 'StartupCo', 'premium'),
-    ('Bob Wilson', 'bob@enterprise.com', 'Enterprise Ltd', 'enterprise'),
-    ('Alice Johnson', 'alice@techstart.io', 'TechStart', 'basic'),
-    ('Mike Davis', 'mike@consulting.com', 'Davis Consulting', 'premium')
-ON CONFLICT (email) DO NOTHING;
-
--- Insert sample FAQs
+-- Insert sample support FAQs
 INSERT INTO support_faqs (question, answer, category) VALUES
 ('How do I integrate the API?', 'You can integrate our API by following the documentation in our developer portal. Start with authentication, then explore our endpoints.', 'integration'),
 ('What are the billing cycles?', 'We offer monthly and annual billing cycles. Annual subscriptions come with a 15% discount.', 'billing'),
@@ -191,10 +98,46 @@ INSERT INTO support_faqs (question, answer, category) VALUES
 ('What is your SLA for support response?', 'Enterprise customers receive responses within 4 hours, Premium within 24 hours, and Basic within 48 hours.', 'general')
 ON CONFLICT (question) DO NOTHING;
 
--- Create a sample support ticket
+-- Create sample support tickets
 INSERT INTO support_tickets (customer_name, customer_email, company, category, severity, subject, description) VALUES
-('John Doe', 'john@acme.com', 'Acme Corp', 'technical', 'medium', 'API Authentication Issue', 'Having trouble authenticating with the API. Getting 401 errors consistently.')
+('John Doe', 'john@acme.com', 'Acme Corp', 'technical', 'medium', 'API Authentication Issue', 'Having trouble authenticating with the API. Getting 401 errors consistently.'),
+('Jane Smith', 'jane@startup.com', 'StartupCo', 'billing', 'low', 'Invoice Question', 'I have a question about my latest invoice charges.'),
+('Bob Wilson', 'bob@enterprise.com', 'Enterprise Ltd', 'integration', 'high', 'Webhook Setup', 'Need help setting up webhooks for our enterprise integration.')
 ON CONFLICT (id) DO NOTHING;
 
+-- Create sample responses for the first ticket
+DO $$
+DECLARE 
+    ticket_id_var TEXT;
+BEGIN
+    -- Get the first ticket ID
+    SELECT id INTO ticket_id_var FROM support_tickets LIMIT 1;
+    
+    IF ticket_id_var IS NOT NULL THEN
+        INSERT INTO support_responses (ticket_id, responder_name, responder_email, message, is_admin_response) VALUES
+        (ticket_id_var, 'Support Team', 'support@yourcompany.com', 'Thank you for contacting us. We are looking into your API authentication issue and will get back to you shortly.', true),
+        (ticket_id_var, 'John Doe', 'john@acme.com', 'Thanks for the quick response. I am still getting the same error. Here are the exact steps I am taking...', false);
+    END IF;
+END $$;
+
+-- Verify all tables were created
+SELECT table_name FROM information_schema.tables 
+WHERE table_schema = 'public' 
+AND table_name IN ('customers', 'support_tickets', 'support_responses', 'support_faqs', 'email_logs', 'contact_interactions')
+ORDER BY table_name;
+
+-- Show counts of sample data
+SELECT 
+    'customers' as table_name, COUNT(*) as record_count FROM customers
+UNION ALL
+SELECT 
+    'support_tickets' as table_name, COUNT(*) as record_count FROM support_tickets
+UNION ALL
+SELECT 
+    'support_responses' as table_name, COUNT(*) as record_count FROM support_responses
+UNION ALL
+SELECT 
+    'support_faqs' as table_name, COUNT(*) as record_count FROM support_faqs;
+
 -- Success message
-SELECT 'Ship_fix Basic Database Schema Applied Successfully! 🎉' as status;
+SELECT 'Ship_fix Support System Database Complete! 🚀' as status;
