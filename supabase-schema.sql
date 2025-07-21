@@ -1,8 +1,8 @@
 -- Supabase SQL Schema for Complete App Data Storage
 -- Run this in your Supabase SQL Editor
 
--- Enable Row Level Security
-ALTER DATABASE postgres SET "app.jwt_secret" TO 'your-jwt-secret';
+-- Note: JWT secret is automatically managed by Supabase
+-- No need to set app.jwt_secret manually
 
 -- Create customers table (main contact storage)
 CREATE TABLE IF NOT EXISTS customers (
@@ -173,26 +173,43 @@ CREATE TRIGGER update_support_faqs_updated_at BEFORE UPDATE ON support_faqs
 -- Function to automatically create customer record when ticket is created
 CREATE OR REPLACE FUNCTION create_customer_from_ticket()
 RETURNS TRIGGER AS $$
+DECLARE
+    customer_exists BOOLEAN := FALSE;
+    customer_uuid UUID;
 BEGIN
-    -- Check if customer exists
-    IF NOT EXISTS (SELECT 1 FROM customers WHERE email = NEW.customer_email) THEN
-        -- Create new customer record
-        INSERT INTO customers (name, email, company, registration_source, total_tickets, open_tickets)
-        VALUES (NEW.customer_name, NEW.customer_email, NEW.company, 'support_ticket', 1, 1);
+    -- Only proceed if customer_email is provided
+    IF NEW.customer_email IS NOT NULL AND NEW.customer_email != '' THEN
+        -- Check if customer exists
+        SELECT EXISTS(SELECT 1 FROM customers WHERE email = NEW.customer_email) INTO customer_exists;
         
-        -- Update the ticket with customer_id
-        NEW.customer_id = (SELECT id FROM customers WHERE email = NEW.customer_email);
-    ELSE
-        -- Update existing customer
-        UPDATE customers 
-        SET 
-            total_tickets = total_tickets + 1,
-            open_tickets = open_tickets + 1,
-            last_activity = NOW()
-        WHERE email = NEW.customer_email;
-        
-        -- Set customer_id on ticket
-        NEW.customer_id = (SELECT id FROM customers WHERE email = NEW.customer_email);
+        IF NOT customer_exists THEN
+            -- Create new customer record
+            INSERT INTO customers (name, email, company, registration_source, total_tickets, open_tickets)
+            VALUES (
+                COALESCE(NEW.customer_name, 'Unknown'), 
+                NEW.customer_email, 
+                NEW.company, 
+                'support_ticket', 
+                1, 
+                1
+            )
+            RETURNING id INTO customer_uuid;
+            
+            -- Update the ticket with customer_id
+            NEW.customer_id = customer_uuid;
+        ELSE
+            -- Update existing customer
+            UPDATE customers 
+            SET 
+                total_tickets = total_tickets + 1,
+                open_tickets = open_tickets + 1,
+                last_activity = NOW()
+            WHERE email = NEW.customer_email
+            RETURNING id INTO customer_uuid;
+            
+            -- Set customer_id on ticket
+            NEW.customer_id = customer_uuid;
+        END IF;
     END IF;
     
     RETURN NEW;
@@ -208,24 +225,31 @@ CREATE TRIGGER auto_create_customer_from_ticket
 CREATE OR REPLACE FUNCTION update_customer_ticket_counts()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- If ticket is being closed
-    IF OLD.status != 'closed' AND NEW.status = 'closed' THEN
-        UPDATE customers 
-        SET open_tickets = open_tickets - 1
-        WHERE email = NEW.customer_email;
+    -- Only proceed if customer_email exists
+    IF NEW.customer_email IS NOT NULL THEN
+        -- If ticket is being closed
+        IF OLD.status != 'closed' AND NEW.status = 'closed' THEN
+            UPDATE customers 
+            SET open_tickets = GREATEST(open_tickets - 1, 0),
+                last_activity = NOW()
+            WHERE email = NEW.customer_email;
+        END IF;
+        
+        -- If ticket is being reopened
+        IF OLD.status = 'closed' AND NEW.status != 'closed' THEN
+            UPDATE customers 
+            SET open_tickets = open_tickets + 1,
+                last_activity = NOW()
+            WHERE email = NEW.customer_email;
+        END IF;
+        
+        -- Always update last activity for any status change
+        IF OLD.status != NEW.status THEN
+            UPDATE customers 
+            SET last_activity = NOW()
+            WHERE email = NEW.customer_email;
+        END IF;
     END IF;
-    
-    -- If ticket is being reopened
-    IF OLD.status = 'closed' AND NEW.status != 'closed' THEN
-        UPDATE customers 
-        SET open_tickets = open_tickets + 1
-        WHERE email = NEW.customer_email;
-    END IF;
-    
-    -- Update last activity
-    UPDATE customers 
-    SET last_activity = NOW()
-    WHERE email = NEW.customer_email;
     
     RETURN NEW;
 END;
@@ -248,40 +272,9 @@ INSERT INTO customers (name, email, company, tier) VALUES
     ('Bob Wilson', 'bob@enterprise.com', 'Enterprise Ltd', 'enterprise')
 ON CONFLICT (email) DO NOTHING;
 
--- Grant permissions (adjust as needed for your setup)
--- GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
--- GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
-    category TEXT NOT NULL,
-    is_public BOOLEAN DEFAULT TRUE,
-    view_count INTEGER DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Create indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_support_tickets_status ON support_tickets(status);
-CREATE INDEX IF NOT EXISTS idx_support_tickets_severity ON support_tickets(severity);
-CREATE INDEX IF NOT EXISTS idx_support_tickets_customer_email ON support_tickets(customer_email);
-CREATE INDEX IF NOT EXISTS idx_support_tickets_created_at ON support_tickets(created_at);
+-- Add missing indexes for support_responses
 CREATE INDEX IF NOT EXISTS idx_support_responses_ticket_id ON support_responses(ticket_id);
-CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
-
--- Create trigger to update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
-CREATE TRIGGER update_support_tickets_updated_at 
-    BEFORE UPDATE ON support_tickets 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_support_faqs_updated_at 
-    BEFORE UPDATE ON support_faqs 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE INDEX IF NOT EXISTS idx_support_responses_created_at ON support_responses(created_at);
 
 -- Insert some sample FAQs
 INSERT INTO support_faqs (question, answer, category) VALUES
@@ -289,17 +282,30 @@ INSERT INTO support_faqs (question, answer, category) VALUES
 ('What are the billing cycles?', 'We offer monthly and annual billing cycles. Annual subscriptions come with a 15% discount.', 'billing'),
 ('How do I reset my password?', 'Click on the "Forgot Password" link on the login page and follow the instructions sent to your email.', 'account'),
 ('What browsers are supported?', 'We support all modern browsers including Chrome, Firefox, Safari, and Edge. Internet Explorer is not supported.', 'technical'),
-('How do I upgrade my plan?', 'You can upgrade your plan from the billing section in your account settings. Changes take effect immediately.', 'billing');
+('How do I upgrade my plan?', 'You can upgrade your plan from the billing section in your account settings. Changes take effect immediately.', 'billing')
+ON CONFLICT (question) DO NOTHING;
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE support_responses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE support_faqs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE email_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contact_interactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_registrations ENABLE ROW LEVEL SECURITY;
 
 -- Create policies for public access (you may want to restrict these in production)
 CREATE POLICY "Allow all operations on support_tickets" ON support_tickets FOR ALL USING (true);
 CREATE POLICY "Allow all operations on support_responses" ON support_responses FOR ALL USING (true);
 CREATE POLICY "Allow all operations on customers" ON customers FOR ALL USING (true);
-CREATE POLICY "Allow read access on support_faqs" ON support_faqs FOR SELECT USING (is_public = true);
-CREATE POLICY "Allow all operations on support_faqs for authenticated users" ON support_faqs FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow all operations on support_faqs" ON support_faqs FOR ALL USING (true);
+CREATE POLICY "Allow all operations on email_logs" ON email_logs FOR ALL USING (true);
+CREATE POLICY "Allow all operations on contact_interactions" ON contact_interactions FOR ALL USING (true);
+CREATE POLICY "Allow all operations on user_registrations" ON user_registrations FOR ALL USING (true);
+
+-- Grant permissions (adjust as needed for your setup)
+-- GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
+-- GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+
+-- Success message
+SELECT 'Ship_fix Support System Database Schema Applied Successfully! 🎉' as status;
