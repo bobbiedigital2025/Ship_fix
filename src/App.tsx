@@ -12,6 +12,8 @@ import Configuration from "./pages/Configuration";
 import MCPDashboard from "./pages/MCPDashboard";
 import Support from "./pages/Support";
 import Profile from "./pages/Profile";
+import Documentation from "./pages/Documentation";
+import AIAssistant from "./pages/AIAssistant";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +44,8 @@ const App = () => (
             {/* Available to all authenticated users */}
             <Route path="/support" element={<Support />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/documentation" element={<Documentation />} />
+            <Route path="/ai-assistant" element={<AIAssistant />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

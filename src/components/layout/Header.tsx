@@ -17,7 +17,9 @@ import {
   Settings,
   HelpCircle,
   LogOut,
-  UserCircle
+  UserCircle,
+  Bot,
+  BookOpen
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -56,6 +58,16 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             />
           </div>
           
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => handleNavigation('/ai-assistant')}
+            className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+          >
+            <Bot className="h-4 w-4 mr-2" />
+            AI Help
+          </Button>
+          
           <Button variant="ghost" size="sm" className="relative">
             <Bell className="h-5 w-5" />
             <Badge 
@@ -88,6 +100,14 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               <DropdownMenuItem onClick={() => handleNavigation('/support')}>
                 <HelpCircle className="mr-2 h-4 w-4" />
                 Support Center
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleNavigation('/ai-assistant')}>
+                <Bot className="mr-2 h-4 w-4" />
+                AI Assistant
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleNavigation('/documentation')}>
+                <BookOpen className="mr-2 h-4 w-4" />
+                Documentation
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleNavigation('/configuration')}>
                 <Settings className="mr-2 h-4 w-4" />
