@@ -14,8 +14,8 @@ interface GoogleAdsConfig {
 
 // Default configuration for Ship_fix
 const DEFAULT_CONFIG: GoogleAdsConfig = {
-  googleAdsId: process.env.VITE_GOOGLE_ADS_ID || 'AW-XXXXXXXXX', // Replace with your Google Ads ID
-  googleAnalyticsId: process.env.VITE_GOOGLE_ANALYTICS_ID || 'G-XXXXXXXXX', // Replace with your GA4 ID
+  googleAdsId: import.meta.env.VITE_GOOGLE_ADS_ID || 'AW-XXXXXXXXX', // Replace with your Google Ads ID
+  googleAnalyticsId: import.meta.env.VITE_GOOGLE_ANALYTICS_ID || 'G-XXXXXXXXX', // Replace with your GA4 ID
   enableConsentMode: true,
   defaultSettings: {
     ad_storage: 'denied',

@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { CookieConsentBanner } from "@/components/ui/CookieConsentBanner";
 import { GoogleAdsIntegration } from "@/components/ads/GoogleAdsIntegration";
+import { PWAInstallPrompt } from "@/components/ui/PWAInstallPrompt";
 
 // Import pages directly (temporarily removing lazy loading for debugging)
 import Index from "./pages/Index";
@@ -60,6 +61,7 @@ const App = () => (
         </BrowserRouter>
         <CookieConsentBanner />
         <GoogleAdsIntegration />
+        <PWAInstallPrompt />
       </TooltipProvider>
     </QueryClientProvider>
   </ThemeProvider>
