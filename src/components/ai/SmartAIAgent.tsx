@@ -78,7 +78,8 @@ const SmartAIAgent: React.FC = () => {
     businessType: '',
     currentPlan: 'Free Plan'
   });
-  const [setupStep, setSetupStep] = useState(0);
+  const [setupStep, setSetupStep] = useState(-1); // -1 means not in setup flow
+  const [setupAnswers, setSetupAnswers] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -107,9 +108,22 @@ const SmartAIAgent: React.FC = () => {
   };
 
   const handleActionButton = (action: string) => {
+    // Setup flow: answer button logic
+    if (setupStep >= 0 && action.startsWith('setup_answer_')) {
+      // Parse step and answer from action string
+      const parts = action.split('_');
+      const step = parseInt(parts[2], 10);
+      const answer = parts.slice(3).join('_');
+      handleSetupAnswer(step, answer);
+      return;
+    }
+    // Prevent other action buttons during setup flow
+    if (setupStep >= 0) return;
     switch (action) {
       case 'setup':
-        startSetupFlow();
+        setSetupStep(0);
+        setSetupAnswers([]);
+        askSetupQuestion(0);
         break;
       case 'features':
         showFeatures();
@@ -129,6 +143,63 @@ const SmartAIAgent: React.FC = () => {
       default:
         break;
     }
+  // Setup questions for onboarding
+  const setupQuestions = [
+    {
+      question: "What type of business do you have?",
+      choices: ["Online Store", "Manufacturer", "Wholesaler", "Retailer", "Other"],
+    },
+    {
+      question: "Where do you ship FROM most of the time? (City or country)",
+      choices: null,
+    },
+    {
+      question: "Where do you ship TO?",
+      choices: ["Same Country", "International", "North America", "Europe", "Asia", "Everywhere"],
+    },
+    {
+      question: "What do you sell? (Just a few words)",
+      choices: null,
+    },
+    {
+      question: "How many packages do you ship per month?",
+      choices: ["1-50", "51-200", "201-1000", "1000+", "Not sure"],
+    },
+    {
+      question: "What's your biggest shipping headache right now?",
+      choices: ["Costs too much", "Takes too long", "Things get lost", "Customs problems", "Hard to track", "All of the above!"],
+    },
+  ];
+
+  // Handle setup answer
+  const handleSetupAnswer = (step: number, answer: string) => {
+    setSetupAnswers(prev => {
+      const updated = [...prev];
+      updated[step] = answer;
+      return updated;
+    });
+    addUserMessage(answer);
+    setTimeout(() => {
+      setSetupStep(step + 1);
+      askSetupQuestion(step + 1);
+    }, 600);
+  };
+
+  // Ask a setup question
+  const askSetupQuestion = (step: number) => {
+    if (step < setupQuestions.length) {
+      const q = setupQuestions[step];
+      addAIMessage(q.question, q.choices ? q.choices.map(c => ({ text: c, action: `setup_answer_${step}_${c}` })) : undefined);
+    } else {
+      finishSetup();
+    }
+  };
+
+  // Finish setup
+  const finishSetup = () => {
+    addAIMessage("🎉 All done! Your Ship_fix platform is set up for your needs. You can now start shipping and optimizing! 🚀");
+    setSetupStep(-1);
+  };
   };
 
   const startSetupFlow = () => {
@@ -250,11 +321,15 @@ const SmartAIAgent: React.FC = () => {
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
-
+    if (setupStep >= 0) {
+      // Setup flow: treat input as answer
+      handleSetupAnswer(setupStep, inputValue.trim());
+      setInputValue('');
+      return;
+    }
     addUserMessage(inputValue);
     const userInput = inputValue;
     setInputValue('');
-    
     await handleAIResponse(userInput);
   };
 
@@ -266,7 +341,7 @@ const SmartAIAgent: React.FC = () => {
   };
 
   return (
-    <Card className="h-[600px] flex flex-col">
+    <Card className="flex flex-col w-full max-w-xl mx-auto shadow-lg rounded-xl overflow-hidden" style={{ height: '100%', maxHeight: '90vh', minHeight: '350px', background: '#fff' }}>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center">
@@ -285,7 +360,7 @@ const SmartAIAgent: React.FC = () => {
       </CardHeader>
       
       <CardContent className="flex-1 flex flex-col">
-        <ScrollArea className="flex-1 pr-4 mb-4">
+        <div className="flex-1 overflow-y-auto px-2 pb-2" style={{ minHeight: 0, maxHeight: '60vh' }}>
           <div className="space-y-4">
             {messages.map((message) => (
               <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -304,8 +379,27 @@ const SmartAIAgent: React.FC = () => {
                       <div className="whitespace-pre-line text-sm leading-relaxed">
                         {message.content}
                       </div>
-                      
-                      {message.actionButtons && (
+                      {/* Setup flow: show answer buttons only for current question */}
+                      {setupStep >= 0 && message.actionButtons && messages[messages.length - 1].id === message.id && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {message.actionButtons.map((button, idx) => (
+                            <Button
+                              key={idx}
+                              size="sm"
+                              variant={button.variant === 'premium' ? 'default' : 'outline'}
+                              className={button.variant === 'premium' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' : ''}
+                              onClick={() => {
+                                // Only allow answer for current setup step
+                                if (setupStep >= 0) handleSetupAnswer(setupStep, button.text);
+                              }}
+                            >
+                              {button.text}
+                            </Button>
+                          ))}
+                        </div>
+                      )}
+                      {/* Non-setup flow: show action buttons as before */}
+                      {setupStep === -1 && message.actionButtons && (
                         <div className="mt-3 flex flex-wrap gap-2">
                           {message.actionButtons.map((button, idx) => (
                             <Button
@@ -325,7 +419,6 @@ const SmartAIAgent: React.FC = () => {
                 </div>
               </div>
             ))}
-            
             {isLoading && (
               <div className="flex justify-start">
                 <div className="bg-gray-100 rounded-lg p-4 border">
@@ -342,7 +435,7 @@ const SmartAIAgent: React.FC = () => {
             )}
           </div>
           <div ref={messagesEndRef} />
-        </ScrollArea>
+        </div>
         
         {/* Input Area */}
         <div className="border-t pt-4">
