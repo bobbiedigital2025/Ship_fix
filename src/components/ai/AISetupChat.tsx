@@ -91,6 +91,7 @@ const setupQuestions: QuestionStep[] = [
 ];
 
 const AISetupChat: React.FC = () => {
+  // ...existing code...
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
@@ -229,12 +230,7 @@ const AISetupChat: React.FC = () => {
       setTimeout(() => askNextQuestion(), 1500);
     }, 500);
   };
-    } catch (error) {
-      console.error('Diagnostics failed:', error);
-    } finally {
-      setIsDiagnosticsRunning(false);
-    }
-  };
+// ...existing code...
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
@@ -282,6 +278,8 @@ const AISetupChat: React.FC = () => {
       handleSendMessage();
     }
   };
+
+  // ...existing code...
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -479,11 +477,21 @@ const AISetupChat: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     className="w-full justify-start text-left h-auto p-2"
-                    onClick={() => setInputValue(question)}
+                    onClick={() => {
+                      if (!isLoading) {
+                        setInputValue("");
+                        handleSendMessageDirect(question);
+                      }
+                    }}
+                    disabled={isLoading}
                   >
                     <span className="text-xs">{question}</span>
                   </Button>
                 ))}
+  // ...existing code...
+// Add direct send for quick help
+// ...existing code...
+
               </div>
             </CardContent>
           </Card>
