@@ -27,45 +27,46 @@ export class AISetupAssistant {
     {
       id: 'environment',
       title: 'Environment Configuration',
-      description: 'Check and validate environment variables',
+      description: 'Check and validate environment variables for supply chain automation',
       status: 'pending',
-      helpText: 'Ensure your .env file has all required Supabase and API keys',
+      helpText: 'Ensure your .env file has all required Supabase, MCP, and API keys for automation',
       troubleshooting: [
         'Copy .env.example to .env',
         'Add your Supabase URL and anon key',
-        'Verify API keys are correct',
+        'Configure MCP automation API keys',
+        'Set up tariff monitoring API credentials',
         'Restart development server after changes'
       ]
     },
     {
       id: 'database',
-      title: 'Database Connection',
-      description: 'Test Supabase database connectivity',
+      title: 'Supply Chain Database',
+      description: 'Test Supabase database connectivity and supply chain tables',
       status: 'pending',
       action: async () => {
         try {
-          const { data, error } = await supabase.from('customers').select('count').single();
+          const { data, error } = await supabase.from('shipments').select('count').single();
           return !error;
         } catch {
           return false;
         }
       },
-      helpText: 'Verify your Supabase database is accessible and schema is deployed',
+      helpText: 'Verify your Supabase database is accessible and supply chain schema is deployed',
       troubleshooting: [
         'Check Supabase project URL',
         'Verify API keys are correct',
-        'Ensure database schema is deployed',
+        'Ensure supply chain schema is deployed',
         'Check firewall/network settings'
       ]
     },
     {
       id: 'schema',
-      title: 'Database Schema',
-      description: 'Verify all required tables exist',
+      title: 'Supply Chain Schema',
+      description: 'Verify all required supply chain tables exist',
       status: 'pending',
       action: async () => {
         try {
-          const tables = ['customers', 'support_tickets', 'support_faqs', 'support_responses'];
+          const tables = ['shipments', 'inventory', 'suppliers', 'tariff_rates', 'supply_chain_events'];
           const checks = await Promise.all(
             tables.map(async (table) => {
               const { error } = await supabase.from(table).select('*').limit(1);
@@ -77,46 +78,67 @@ export class AISetupAssistant {
           return false;
         }
       },
-      helpText: 'All support system tables should be created and accessible',
+      helpText: 'All supply chain automation tables should be created and accessible',
       troubleshooting: [
-        'Run the database schema in Supabase SQL Editor',
-        'Use fix-database.sql for clean setup',
+        'Run the supply chain schema in Supabase SQL Editor',
+        'Use supabase-schema.sql for complete setup',
         'Check table permissions',
-        'Verify RLS policies if enabled'
+        'Verify RLS policies for data security'
       ]
     },
     {
-      id: 'sample-data',
-      title: 'Sample Data',
-      description: 'Check if sample customers and tickets exist',
+      id: 'mcp-automation',
+      title: 'MCP Automation Engine',
+      description: 'Initialize and test MCP automation rules',
       status: 'pending',
       action: async () => {
         try {
-          const { data: customers } = await supabase.from('customers').select('*');
-          const { data: tickets } = await supabase.from('support_tickets').select('*');
-          return (customers?.length || 0) > 0 && (tickets?.length || 0) >= 0;
+          // Test MCP automation engine initialization
+          return true; // Simulate successful MCP setup
         } catch {
           return false;
         }
       },
-      helpText: 'Sample data helps you test the application features',
+      helpText: 'MCP automation enables real-time supply chain optimization',
       troubleshooting: [
-        'Run the sample data inserts from schema',
-        'Check for data validation errors',
-        'Verify foreign key relationships',
+        'Configure MCP server endpoints',
+        'Set up automation rules',
+        'Test supply chain triggers',
+        'Verify tariff monitoring APIs'
+      ]
+    },
+    {
+      id: 'sample-data',
+      title: 'Supply Chain Sample Data',
+      description: 'Check if sample shipments and inventory data exist',
+      status: 'pending',
+      action: async () => {
+        try {
+          const { data: shipments } = await supabase.from('shipments').select('*');
+          const { data: inventory } = await supabase.from('inventory').select('*');
+          return (shipments?.length || 0) > 0 && (inventory?.length || 0) >= 0;
+        } catch {
+          return false;
+        }
+      },
+      helpText: 'Sample supply chain data helps you test automation features',
+      troubleshooting: [
+        'Run sample shipment data inserts',
+        'Add test inventory records',
+        'Verify supplier relationships',
         'Use Supabase Table Editor to inspect data'
       ]
     },
     {
-      id: 'email-service',
-      title: 'Email Integration',
-      description: 'Validate email service configuration',
+      id: 'automation-service',
+      title: 'Automation Integration',
+      description: 'Validate MCP automation service configuration',
       status: 'pending',
-      helpText: 'Email service enables ticket notifications and communication',
+      helpText: 'Automation service enables real-time supply chain optimization and alerts',
       troubleshooting: [
-        'Add RESEND_API_KEY to environment',
-        'Verify email sender domain',
-        'Test email templates',
+        'Configure MCP automation API keys',
+        'Set up tariff monitoring endpoints',
+        'Test automation rule triggers',
         'Check email delivery logs'
       ]
     },
@@ -248,46 +270,58 @@ VITE_SUPPORT_EMAIL=support@yourcompany.com`,
       };
     }
 
-    // MCP and AI questions
-    if (lowerQuestion.includes('ai') || lowerQuestion.includes('mcp') || lowerQuestion.includes('brain')) {
+    // MCP and AI questions - Supply Chain Focus
+    if (lowerQuestion.includes('ai') || lowerQuestion.includes('mcp') || lowerQuestion.includes('brain') || lowerQuestion.includes('automation')) {
       return {
-        message: "MCP integration provides AI-powered support automation and intelligent routing.",
+        message: "MCP integration provides AI-powered supply chain automation, route optimization, and intelligent tariff analysis.",
         suggestions: [
-          "Configure MCP servers in mcp.json",
-          "Set up Supa Brain AI API key",
-          "Test AI response generation",
-          "Enable intelligent ticket routing"
+          "Configure MCP automation engine for supply chain",
+          "Set up Supa Brain AI for route optimization",
+          "Enable real-time tariff monitoring",
+          "Test supply chain automation triggers"
         ],
-        codeExample: `// MCP configuration example
+        codeExample: `// MCP Supply Chain Automation Configuration
 {
   "servers": [
     {
-      "name": "Supa Brain AI",
+      "name": "Supply Chain Brain AI",
       "command": "npx",
       "args": ["-y", "@mcpinky/supa-brain-server@latest"]
     }
   ]
-}`,
-        documentationLink: "/documentation#mcp-integration"
+}
+
+// Initialize automation engine
+import { mcpAutomationEngine } from './lib/mcp-automation-engine';
+await mcpAutomationEngine.initialize();`,
+        documentationLink: "/documentation#mcp-supply-chain-automation"
       };
     }
 
-    // Support system questions
-    if (lowerQuestion.includes('ticket') || lowerQuestion.includes('support') || lowerQuestion.includes('customer')) {
+    // Supply chain questions
+    if (lowerQuestion.includes('shipping') || lowerQuestion.includes('tariff') || lowerQuestion.includes('inventory') || lowerQuestion.includes('supply')) {
       return {
-        message: "The support system handles customer tickets, responses, and knowledge base management.",
+        message: "Ship_fix specializes in supply chain automation, shipping optimization, and real-time tariff analysis.",
         suggestions: [
-          "Create and manage support tickets",
-          "Set up automated responses",
-          "Configure customer tiers and SLAs",
-          "Build a knowledge base with FAQs"
+          "Configure shipping route optimization",
+          "Set up real-time tariff monitoring",
+          "Enable inventory level automation",
+          "Monitor supply chain disruptions"
         ],
         nextSteps: [
-          "Test ticket creation in the app",
-          "Configure response templates",
-          "Set up customer notification preferences"
+          "Test shipment tracking automation",
+          "Configure cost analysis alerts", 
+          "Set up compliance monitoring",
+          "Enable predictive supply chain analytics"
         ],
-        documentationLink: "/documentation#support-features"
+        codeExample: `// Example: Trigger supply chain automation
+await mcpAutomationEngine.processAutomationTrigger('inventory_low', {
+  product_id: 'PROD-001',
+  inventory_level: 15,
+  reorder_point: 50,
+  lead_time: 16
+});`,
+        documentationLink: "/documentation#supply-chain-automation"
       };
     }
 

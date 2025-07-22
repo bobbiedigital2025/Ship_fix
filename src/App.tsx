@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
 import { RoleGuard } from "@/components/auth/RoleGuard";
+import { CookieConsentBanner } from "@/components/ui/CookieConsentBanner";
+import { GoogleAdsIntegration } from "@/components/ads/GoogleAdsIntegration";
 
 // Import pages directly (temporarily removing lazy loading for debugging)
 import Index from "./pages/Index";
@@ -14,6 +16,8 @@ import Support from "./pages/Support";
 import Profile from "./pages/Profile";
 import Documentation from "./pages/Documentation";
 import AIAssistant from "./pages/AIAssistant";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,9 +50,16 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/documentation" element={<Documentation />} />
             <Route path="/ai-assistant" element={<AIAssistant />} />
+            
+            {/* Legal pages - publicly accessible */}
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        <CookieConsentBanner />
+        <GoogleAdsIntegration />
       </TooltipProvider>
     </QueryClientProvider>
   </ThemeProvider>

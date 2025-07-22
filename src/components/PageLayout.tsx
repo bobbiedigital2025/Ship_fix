@@ -3,6 +3,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import Header from './layout/Header';
 import Sidebar from './layout/Sidebar';
+import Footer from './layout/Footer';
 
 interface PageLayoutProps {
   children: React.ReactNode;
@@ -26,11 +27,12 @@ const PageLayout: React.FC<PageLayoutProps> = ({ children }) => {
       )}
       
       {/* Main Content */}
-      <div className="flex flex-col">
+      <div className="flex flex-col min-h-screen">
         <Header onMenuClick={toggleSidebar} />
         <main className="flex-1">
           {children}
         </main>
+        <Footer />
       </div>
     </div>
   );

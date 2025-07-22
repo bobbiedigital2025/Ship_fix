@@ -42,12 +42,14 @@ const AISetupChat: React.FC = () => {
     const welcomeMessage: ChatMessage = {
       id: '1',
       type: 'ai',
-      content: "👋 Hello! I'm your Ship_fix AI assistant. I can help you set up the application, troubleshoot issues, and answer questions about features.",
+      content: "� Welcome to Ship_fix AI! I specialize in ecommerce, shipping optimization, supply chain visibility, and tariff analysis automation. I can help you configure MCP automation rules, optimize shipping routes, and set up trade compliance monitoring.",
       timestamp: new Date(),
       aiResponse: {
-        message: "I'm here to help you get Ship_fix running smoothly!",
+        message: "I'm here to help you automate your supply chain operations with cutting-edge MCP technology!",
         suggestions: [
-          "Run system diagnostics",
+          "Setup supply chain automation",
+          "Configure shipping optimization",
+          "Setup tariff monitoring",
           "Ask about database setup",
           "Get help with environment configuration",
           "Learn about support features",

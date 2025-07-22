@@ -76,6 +76,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         'fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out',
         isOpen ? 'translate-x-0' : '-translate-x-full'
       )}
+      data-tour="navigation"
     >
       <div className="flex flex-col h-full">
         <div className="flex items-center justify-between p-4 border-b">
@@ -103,6 +104,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                       console.log(`🎯 Clicked on: ${item.name} -> ${item.path}`);
                       handleNavigation(item.path);
                     }}
+                    data-tour={item.name === 'Configuration' ? 'config-link' : 
+                              item.name === 'MCP Integration' ? 'mcp-link' : undefined}
                   >
                     <Icon className="mr-3 h-4 w-4" />
                     {item.name}

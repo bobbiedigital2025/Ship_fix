@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 interface MCPAutomationRule {
   id: string;
   name: string;
-  trigger: 'ticket_created' | 'customer_registered' | 'email_received' | 'threshold_reached';
+  trigger: 'shipment_created' | 'inventory_low' | 'tariff_change' | 'delay_detected' | 'cost_spike' | 'compliance_issue';
   conditions: Record<string, any>;
   actions: MCPAction[];
   enabled: boolean;
@@ -11,7 +11,7 @@ interface MCPAutomationRule {
 }
 
 interface MCPAction {
-  type: 'assign_ticket' | 'send_email' | 'escalate' | 'tag_customer' | 'ai_analyze' | 'webhook';
+  type: 'route_optimize' | 'alert_procurement' | 'update_pricing' | 'flag_compliance' | 'analyze_costs' | 'notify_stakeholders' | 'auto_reroute';
   config: Record<string, any>;
 }
 
@@ -42,55 +42,96 @@ export class MCPAutomationEngine {
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
     
-    console.log('🤖 Initializing MCP Automation Engine for Bobbie Digital...');
+    console.log('🚀 Initializing Ship_fix MCP Automation Engine - Ecommerce/Supply Chain Focus...');
+    console.log('🎯 Specializations: Shipping Optimization, Supply Visibility, Tariff Analysis');
     
     await this.loadAutomationRules();
     await this.setupMCPServers();
-    await this.initializeAIWorkflows();
+    await this.initializeSupaBrainAI();
     
     this.isInitialized = true;
-    console.log('✅ MCP Automation Engine initialized successfully');
+    console.log('✅ Ship_fix MCP Automation Engine ready for supply chain optimization');
   }
 
   // Load automation rules from database
   private async loadAutomationRules(): Promise<void> {
-    // Default automation rules for Bobbie Digital
+    // Ecommerce/Shipping/Supply Chain automation rules for Bobbie Digital
     this.automationRules = [
       {
-        id: 'auto-assign-technical',
-        name: 'Auto-assign Technical Tickets',
-        trigger: 'ticket_created',
-        conditions: { category: 'technical', severity: ['high', 'critical'] },
+        id: 'optimize-shipping-routes',
+        name: 'Auto-optimize Shipping Routes Based on Cost & Speed',
+        trigger: 'shipment_created',
+        conditions: { value: '> 1000', destination: 'international' },
         actions: [
-          { type: 'assign_ticket', config: { assignee: 'tech_lead' } },
-          { type: 'ai_analyze', config: { priority: 'urgent' } }
+          { type: 'route_optimize', config: { priority: 'cost_efficiency' } },
+          { type: 'analyze_costs', config: { include_tariffs: true } }
         ],
         enabled: true,
         priority: 1
       },
       {
-        id: 'escalate-enterprise',
-        name: 'Escalate Enterprise Customer Issues',
-        trigger: 'ticket_created',
-        conditions: { customer_tier: 'enterprise', response_time: '> 4_hours' },
+        id: 'inventory-reorder-alert',
+        name: 'Smart Inventory Reordering & Supplier Alerts',
+        trigger: 'inventory_low',
+        conditions: { threshold: '< 20%', lead_time: '> 14_days' },
         actions: [
-          { type: 'escalate', config: { level: 'manager' } },
-          { type: 'send_email', config: { template: 'enterprise_escalation' } }
+          { type: 'alert_procurement', config: { urgency: 'high', auto_suggest_suppliers: true } },
+          { type: 'analyze_costs', config: { compare_suppliers: true } }
         ],
         enabled: true,
         priority: 2
       },
       {
-        id: 'ai-sentiment-analysis',
-        name: 'AI Sentiment Analysis on All Tickets',
-        trigger: 'ticket_created',
-        conditions: {},
+        id: 'tariff-impact-analysis',
+        name: 'Real-time Tariff Change Impact Analysis',
+        trigger: 'tariff_change',
+        conditions: { impact: '> 5%', product_categories: ['electronics', 'textiles'] },
         actions: [
-          { type: 'ai_analyze', config: { analysis_type: 'sentiment' } },
-          { type: 'tag_customer', config: { conditional: 'negative_sentiment' } }
+          { type: 'analyze_costs', config: { analysis_type: 'tariff_impact' } },
+          { type: 'update_pricing', config: { auto_adjust: true } },
+          { type: 'notify_stakeholders', config: { urgency: 'immediate' } }
         ],
         enabled: true,
-        priority: 3
+        priority: 1
+      },
+      {
+        id: 'supply-chain-disruption',
+        name: 'Supply Chain Disruption Detection & Response',
+        trigger: 'delay_detected',
+        conditions: { delay: '> 48_hours', critical_path: true },
+        actions: [
+          { type: 'auto_reroute', config: { find_alternatives: true } },
+          { type: 'notify_stakeholders', config: { include_eta_updates: true } },
+          { type: 'analyze_costs', config: { disruption_impact: true } }
+        ],
+        enabled: true,
+        priority: 1
+      },
+      {
+        id: 'compliance-monitoring',
+        name: 'Automated Trade Compliance & Documentation',
+        trigger: 'compliance_issue',
+        conditions: { severity: ['medium', 'high'], region: 'all' },
+        actions: [
+          { type: 'flag_compliance', config: { auto_document: true } },
+          { type: 'notify_stakeholders', config: { compliance_team: true } },
+          { type: 'analyze_costs', config: { compliance_costs: true } }
+        ],
+        enabled: true,
+        priority: 2
+      },
+      {
+        id: 'cost-spike-detection',
+        name: 'Transportation Cost Spike Alert & Analysis',
+        trigger: 'cost_spike',
+        conditions: { increase: '> 15%', duration: '> 7_days' },
+        actions: [
+          { type: 'analyze_costs', config: { trend_analysis: true } },
+          { type: 'route_optimize', config: { cost_priority: 'maximum' } },
+          { type: 'alert_procurement', config: { renegotiate_contracts: true } }
+        ],
+        enabled: true,
+        priority: 2
       }
     ];
   }
@@ -115,17 +156,21 @@ export class MCPAutomationEngine {
     const config = {
       projectRef: 'exwngratmprvuqnibtey',
       apiKey: import.meta.env.VITE_MCP_API_KEY,
+      specialization: 'supply_chain',
       features: [
-        'sentiment_analysis',
-        'auto_categorization',
-        'response_suggestion',
-        'priority_scoring',
-        'knowledge_base_search'
+        'route_optimization',
+        'cost_analysis',
+        'tariff_impact_modeling',
+        'supply_disruption_prediction',
+        'inventory_forecasting',
+        'compliance_monitoring',
+        'carrier_performance_analysis'
       ]
     };
 
-    // Simulate MCP server initialization
-    console.log('🧠 Supa Brain AI initialized with features:', config.features);
+    // Simulate MCP server initialization for supply chain
+    console.log('🧠 Supa Brain AI initialized for supply chain with features:', config.features);
+    console.log('📊 Ready for: Shipping optimization, tariff analysis, supply visibility');
   }
 
   // Initialize Supabase MCP server
@@ -140,27 +185,39 @@ export class MCPAutomationEngine {
   async getMCPResources(): Promise<MCPResource[]> {
     return [
       {
-        uri: 'supabase://customers',
-        name: 'Customer Database',
-        description: 'Customer profiles and interaction history',
+        uri: 'supply-chain://inventory',
+        name: 'Inventory Management System',
+        description: 'Real-time inventory levels, supplier data, and reorder points',
         mimeType: 'application/json'
       },
       {
-        uri: 'supabase://support_tickets',
-        name: 'Support Tickets',
-        description: 'All support tickets and responses',
+        uri: 'shipping://routes',
+        name: 'Shipping Routes & Carriers',
+        description: 'Optimized shipping routes, carrier rates, and transit times',
         mimeType: 'application/json'
       },
       {
-        uri: 'supabase://support_faqs',
-        name: 'Knowledge Base',
-        description: 'FAQ articles and help documentation',
-        mimeType: 'text/markdown'
+        uri: 'tariffs://database',
+        name: 'Global Tariff Database',
+        description: 'Real-time tariff rates, trade agreements, and compliance rules',
+        mimeType: 'application/json'
       },
       {
-        uri: 'automation://rules',
-        name: 'Automation Rules',
-        description: 'Active automation workflows and triggers',
+        uri: 'supply-chain://visibility',
+        name: 'Supply Chain Visibility',
+        description: 'End-to-end shipment tracking and supplier performance',
+        mimeType: 'application/json'
+      },
+      {
+        uri: 'automation://cost-analysis',
+        name: 'Cost Analysis Engine',
+        description: 'Transportation costs, landed costs, and profit margin analysis',
+        mimeType: 'application/json'
+      },
+      {
+        uri: 'compliance://regulations',
+        name: 'Trade Compliance Database',
+        description: 'Import/export regulations, documentation requirements',
         mimeType: 'application/json'
       }
     ];
@@ -170,46 +227,79 @@ export class MCPAutomationEngine {
   async getMCPTools(): Promise<MCPTool[]> {
     return [
       {
-        name: 'analyze_ticket_sentiment',
-        description: 'Analyze the sentiment and urgency of a support ticket',
+        name: 'optimize_shipping_route',
+        description: 'Calculate optimal shipping routes based on cost, speed, and reliability',
         inputSchema: {
           type: 'object',
           properties: {
-            ticket_id: { type: 'string' },
-            content: { type: 'string' }
+            origin: { type: 'string' },
+            destination: { type: 'string' },
+            weight: { type: 'number' },
+            value: { type: 'number' },
+            priority: { type: 'string', enum: ['cost', 'speed', 'reliability'] }
           }
         }
       },
       {
-        name: 'suggest_response',
-        description: 'Generate AI-powered response suggestions',
+        name: 'analyze_tariff_impact',
+        description: 'Analyze the impact of tariff changes on product costs',
         inputSchema: {
           type: 'object',
           properties: {
-            ticket_id: { type: 'string' },
-            customer_history: { type: 'array' }
+            product_category: { type: 'string' },
+            origin_country: { type: 'string' },
+            destination_country: { type: 'string' },
+            value: { type: 'number' }
           }
         }
       },
       {
-        name: 'auto_categorize',
-        description: 'Automatically categorize and prioritize tickets',
+        name: 'predict_supply_disruption',
+        description: 'Predict potential supply chain disruptions using AI',
         inputSchema: {
           type: 'object',
           properties: {
-            subject: { type: 'string' },
-            description: { type: 'string' }
+            supplier_id: { type: 'string' },
+            product_category: { type: 'string' },
+            historical_data: { type: 'array' }
           }
         }
       },
       {
-        name: 'search_knowledge_base',
-        description: 'Search FAQ and knowledge base for relevant articles',
+        name: 'calculate_landed_cost',
+        description: 'Calculate total landed cost including shipping, duties, and fees',
         inputSchema: {
           type: 'object',
           properties: {
-            query: { type: 'string' },
-            category: { type: 'string' }
+            product_cost: { type: 'number' },
+            shipping_method: { type: 'string' },
+            destination: { type: 'string' },
+            include_insurance: { type: 'boolean' }
+          }
+        }
+      },
+      {
+        name: 'monitor_inventory_levels',
+        description: 'Monitor inventory levels and predict reorder points',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            product_id: { type: 'string' },
+            warehouse_location: { type: 'string' },
+            demand_forecast: { type: 'array' }
+          }
+        }
+      },
+      {
+        name: 'compliance_check',
+        description: 'Verify trade compliance and documentation requirements',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            product_hs_code: { type: 'string' },
+            origin_country: { type: 'string' },
+            destination_country: { type: 'string' },
+            shipment_value: { type: 'number' }
           }
         }
       }
@@ -269,143 +359,244 @@ export class MCPAutomationEngine {
     data: Record<string, any>
   ): Promise<void> {
     switch (action.type) {
-      case 'ai_analyze':
-        await this.performAIAnalysis(data, action.config);
+      case 'analyze_costs':
+        await this.performCostAnalysis(data, action.config);
         break;
       
-      case 'assign_ticket':
-        await this.assignTicket(data.ticket_id, action.config.assignee);
+      case 'route_optimize':
+        await this.optimizeShippingRoute(data, action.config);
         break;
       
-      case 'send_email':
-        await this.sendAutomatedEmail(data, action.config);
+      case 'alert_procurement':
+        await this.sendProcurementAlert(data, action.config);
         break;
       
-      case 'escalate':
-        await this.escalateTicket(data.ticket_id, action.config.level);
+      case 'update_pricing':
+        await this.updateProductPricing(data, action.config);
         break;
       
-      case 'tag_customer':
-        await this.tagCustomer(data.customer_id, action.config);
+      case 'flag_compliance':
+        await this.flagComplianceIssue(data, action.config);
         break;
       
-      case 'webhook':
-        await this.triggerWebhook(action.config.url, data);
+      case 'notify_stakeholders':
+        await this.notifyStakeholders(data, action.config);
+        break;
+
+      case 'auto_reroute':
+        await this.autoRerouteShipment(data, action.config);
         break;
     }
   }
 
-  // AI Analysis using MCP
-  async performAIAnalysis(
+  // Cost Analysis using MCP
+  async performCostAnalysis(
     data: Record<string, any>, 
     config: Record<string, any>
   ): Promise<any> {
-    console.log(`🧠 Performing AI analysis: ${config.analysis_type || 'general'}`);
+    console.log(`💰 Performing cost analysis: ${config.analysis_type || 'general'}`);
     
-    // Simulate AI analysis results
+    // Simulate comprehensive cost analysis
     const analysis = {
-      sentiment: Math.random() > 0.7 ? 'negative' : 'positive',
-      urgency: Math.random() > 0.8 ? 'high' : 'medium',
-      category: 'technical',
-      confidence: 0.85,
-      suggested_response: 'Thank you for contacting Bobbie Digital support...',
-      keywords: ['api', 'authentication', 'error']
+      shipping_cost: Math.random() * 500 + 100,
+      tariff_cost: Math.random() * 200 + 50,
+      landed_cost: Math.random() * 1000 + 500,
+      cost_variance: (Math.random() - 0.5) * 20, // -10% to +10%
+      recommendations: [
+        'Consider alternative shipping routes',
+        'Negotiate better rates with carrier',
+        'Optimize packaging to reduce dimensional weight'
+      ],
+      risk_factors: ['tariff_volatility', 'fuel_price_increase', 'capacity_constraints'],
+      savings_opportunity: Math.random() * 15 + 5 // 5-20% savings
     };
 
-    // Store analysis results
-    if (data.ticket_id) {
-      await this.supabase
-        .from('support_tickets')
-        .update({ 
-          internal_notes: `AI Analysis: ${JSON.stringify(analysis)}`,
-          priority: analysis.urgency === 'high' ? 1 : 5
-        })
-        .eq('id', data.ticket_id);
-    }
+    // Log analysis in supply chain system
+    await this.logSupplyChainEvent('cost_analysis', {
+      analysis_type: config.analysis_type,
+      results: analysis,
+      shipment_id: data.shipment_id,
+      timestamp: new Date().toISOString()
+    });
 
     return analysis;
   }
 
-  // Assign ticket to team member
-  private async assignTicket(ticketId: string, assignee: string): Promise<void> {
-    await this.supabase
-      .from('support_tickets')
-      .update({ assigned_to: assignee, status: 'in-progress' })
-      .eq('id', ticketId);
-    
-    console.log(`🎯 Ticket ${ticketId} assigned to ${assignee}`);
-  }
-
-  // Send automated email
-  private async sendAutomatedEmail(
+  // Optimize shipping route
+  private async optimizeShippingRoute(
     data: Record<string, any>, 
     config: Record<string, any>
   ): Promise<void> {
-    console.log(`📧 Sending automated email: ${config.template}`);
+    console.log(`🚚 Optimizing shipping route with priority: ${config.priority || 'balanced'}`);
     
-    // Log email in database
-    await this.supabase.from('email_logs').insert({
-      customer_id: data.customer_id,
-      email_to: data.customer_email || 'marketing-support@bobbiedigital.com',
-      email_from: 'no-reply@bobbiedigital.com',
-      subject: `Automated: ${config.template}`,
-      email_type: 'automation',
-      template_used: config.template,
-      status: 'sent'
+    const optimization = {
+      original_route: data.current_route || 'Standard',
+      optimized_route: 'Express+Hub',
+      cost_savings: Math.random() * 100 + 25,
+      time_savings: Math.random() * 24 + 6, // hours
+      carbon_reduction: Math.random() * 15 + 5 // kg CO2
+    };
+
+    await this.logSupplyChainEvent('route_optimization', {
+      shipment_id: data.shipment_id,
+      optimization,
+      config
     });
   }
 
-  // Escalate ticket
-  private async escalateTicket(ticketId: string, level: string): Promise<void> {
-    await this.supabase
-      .from('support_tickets')
-      .update({ 
-        severity: 'critical',
-        assigned_to: `${level}_team`,
-        internal_notes: `Escalated to ${level} level`
-      })
-      .eq('id', ticketId);
-    
-    console.log(`⬆️ Ticket ${ticketId} escalated to ${level} level`);
-  }
-
-  // Tag customer
-  private async tagCustomer(
-    customerId: string, 
+  // Send procurement alert
+  private async sendProcurementAlert(
+    data: Record<string, any>, 
     config: Record<string, any>
   ): Promise<void> {
-    const { data: customer } = await this.supabase
-      .from('customers')
-      .select('tags')
-      .eq('id', customerId)
-      .single();
-
-    const currentTags = customer?.tags || [];
-    const newTag = config.conditional || config.tag;
+    console.log(`� Sending procurement alert: ${config.urgency || 'normal'}`);
     
-    if (!currentTags.includes(newTag)) {
-      await this.supabase
-        .from('customers')
-        .update({ tags: [...currentTags, newTag] })
-        .eq('id', customerId);
+    await this.logSupplyChainEvent('procurement_alert', {
+      product_id: data.product_id,
+      current_inventory: data.inventory_level,
+      reorder_point: data.reorder_point,
+      suggested_suppliers: config.auto_suggest_suppliers ? [
+        'Supplier A (Lead time: 7 days, Cost: $X)',
+        'Supplier B (Lead time: 14 days, Cost: $Y)',
+        'Supplier C (Lead time: 21 days, Cost: $Z)'
+      ] : [],
+      urgency: config.urgency
+    });
+  }
+
+  // Update product pricing
+  private async updateProductPricing(
+    data: Record<string, any>, 
+    config: Record<string, any>
+  ): Promise<void> {
+    console.log(`💲 Updating product pricing due to cost changes`);
+    
+    const priceAdjustment = {
+      product_id: data.product_id,
+      current_price: data.current_price || 100,
+      price_change: data.cost_impact || 5,
+      new_price: (data.current_price || 100) * (1 + (data.cost_impact || 5) / 100),
+      reason: 'Tariff/shipping cost adjustment',
+      effective_date: new Date().toISOString()
+    };
+
+    await this.logSupplyChainEvent('price_adjustment', priceAdjustment);
+  }
+
+  // Flag compliance issue
+  private async flagComplianceIssue(
+    data: Record<string, any>, 
+    config: Record<string, any>
+  ): Promise<void> {
+    console.log(`⚠️ Flagging compliance issue for review`);
+    
+    await this.logSupplyChainEvent('compliance_flag', {
+      shipment_id: data.shipment_id,
+      issue_type: data.compliance_issue_type,
+      severity: data.severity,
+      auto_documentation: config.auto_document,
+      required_actions: [
+        'Review documentation',
+        'Verify HS codes',
+        'Check trade agreements',
+        'Update compliance records'
+      ]
+    });
+  }
+
+  // Notify stakeholders
+  private async notifyStakeholders(
+    data: Record<string, any>, 
+    config: Record<string, any>
+  ): Promise<void> {
+    console.log(`📧 Notifying stakeholders: ${config.urgency || 'normal'} priority`);
+    
+    const notification = {
+      recipients: config.compliance_team ? 
+        ['compliance@bobbiedigital.com', 'operations@bobbiedigital.com'] :
+        ['logistics@bobbiedigital.com', 'procurement@bobbiedigital.com'],
+      subject: `Supply Chain Alert: ${data.alert_type || 'Update Required'}`,
+      priority: config.urgency,
+      include_eta: config.include_eta_updates || false,
+      data_summary: data
+    };
+
+    await this.logSupplyChainEvent('stakeholder_notification', notification);
+  }
+
+  // Auto-reroute shipment
+  private async autoRerouteShipment(
+    data: Record<string, any>, 
+    config: Record<string, any>
+  ): Promise<void> {
+    console.log(`🔄 Auto-rerouting shipment due to disruption`);
+    
+    const rerouting = {
+      shipment_id: data.shipment_id,
+      original_route: data.current_route,
+      disruption_reason: data.disruption_reason,
+      alternative_routes: config.find_alternatives ? [
+        'Route A: +2 days, +$50',
+        'Route B: Same ETA, +$125',
+        'Route C: -1 day, +$200'
+      ] : [],
+      selected_route: 'Route B: Same ETA, +$125',
+      cost_impact: 125,
+      time_impact: 0
+    };
+
+    await this.logSupplyChainEvent('auto_reroute', rerouting);
+  }
+
+  // Log supply chain events
+  private async logSupplyChainEvent(
+    event_type: string, 
+    event_data: Record<string, any>
+  ): Promise<void> {
+    try {
+      // Log to supply chain events table
+      console.log(`📊 Supply Chain Event: ${event_type}`, event_data);
+      
+      // Log to Supabase for tracking
+      await this.supabase.from('supply_chain_events').insert({
+        event_type,
+        event_data,
+        timestamp: new Date().toISOString(),
+        source: 'mcp_automation'
+      });
+
+      // If this is a tariff-related event, also log to tariff_events table
+      if (event_type.includes('tariff') || event_data.tariff_impact) {
+        await this.logTariffEvent(event_type, event_data);
+      }
+    } catch (error) {
+      console.error('Failed to log supply chain event:', error);
     }
   }
 
-  // Trigger webhook
-  private async triggerWebhook(url: string, data: Record<string, any>): Promise<void> {
+  // Log tariff-specific events for Trump tariff monitoring
+  private async logTariffEvent(
+    event_type: string,
+    event_data: Record<string, any>
+  ): Promise<void> {
     try {
-      await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          ...data, 
-          source: 'bobbie_digital_automation',
-          timestamp: new Date().toISOString()
-        })
-      });
-      console.log(`🔗 Webhook triggered: ${url}`);
+      const tariffEvent = {
+        event_type: event_type.includes('tariff') ? 'tariff_change' : 'impact',
+        product_category: event_data.product_category || 'general',
+        origin_country: event_data.origin_country || 'China',
+        destination_country: 'US',
+        tariff_rate_new: event_data.new_tariff_rate || 25.0,
+        cost_impact_percentage: event_data.cost_impact || Math.random() * 20 + 5,
+        description: `Automated detection: ${event_type} - ${event_data.description || 'Supply chain cost impact'}`,
+        trump_policy_reference: event_data.policy_ref || 'Executive Order 2025-001',
+        mitigation_strategy: 'Automated MCP resolution with A2A cost mitigation',
+        affected_customers: event_data.affected_customers || []
+      };
+
+      await this.supabase.from('tariff_events').insert(tariffEvent);
+      console.log('🎯 Tariff event logged for automated resolution');
     } catch (error) {
-      console.error('Webhook failed:', error);
+      console.error('Failed to log tariff event:', error);
     }
   }
 
@@ -414,12 +605,124 @@ export class MCPAutomationEngine {
     return {
       total_rules: this.automationRules.length,
       active_rules: this.automationRules.filter(r => r.enabled).length,
-      executions_today: Math.floor(Math.random() * 50) + 10,
-      success_rate: 0.97,
-      avg_response_time: '1.2s',
-      mcp_servers_connected: 2,
-      ai_analyses_performed: Math.floor(Math.random() * 100) + 50
+      shipments_processed_today: Math.floor(Math.random() * 150) + 50,
+      cost_savings_percentage: Math.round((Math.random() * 15 + 5) * 100) / 100, // 5-20%
+      avg_route_optimization_time: '2.3s',
+      supply_chain_visibility: '94%',
+      compliance_success_rate: 0.98,
+      tariff_analyses_performed: Math.floor(Math.random() * 75) + 25,
+      inventory_alerts_sent: Math.floor(Math.random() * 30) + 10,
+      disruptions_detected: Math.floor(Math.random() * 8) + 2,
+      auto_reroutes_completed: Math.floor(Math.random() * 12) + 3,
+      cost_variance_reduced: '23%',
+      supplier_performance_score: 0.91,
+      delivery_accuracy: '96.7%'
     };
+  }
+
+  // Simulate real-time supply chain triggers for demo
+  async simulateSupplyChainEvents(): Promise<void> {
+    const events = [
+      {
+        trigger: 'shipment_created',
+        data: { 
+          shipment_id: 'SH-2025-001',
+          value: 1500,
+          destination: 'international',
+          current_route: 'Standard'
+        }
+      },
+      {
+        trigger: 'inventory_low',
+        data: {
+          product_id: 'PROD-001',
+          inventory_level: 15,
+          reorder_point: 50,
+          lead_time: 16
+        }
+      },
+      {
+        trigger: 'tariff_change',
+        data: {
+          product_category: 'electronics',
+          origin_country: 'China',
+          impact: 7.5,
+          region: 'US-China',
+          new_tariff_rate: 25.0,
+          cost_impact: 17.5,
+          policy_ref: 'Trump Executive Order 2025-001',
+          description: 'Trump administration increased China electronics tariff from 7.5% to 25%',
+          affected_customers: []
+        }
+      },
+      {
+        trigger: 'delay_detected',
+        data: {
+          shipment_id: 'SH-2025-002',
+          delay: 52,
+          critical_path: true,
+          disruption_reason: 'weather'
+        }
+      },
+      {
+        trigger: 'cost_spike',
+        data: {
+          cost_type: 'tariff_impact',
+          product_category: 'textiles',
+          origin_country: 'China',
+          cost_increase: 20.0,
+          trump_tariff: true,
+          description: 'Trump tariff causing 20% cost spike on textile imports'
+        }
+      }
+    ];
+
+    // Process random events for demo
+    const randomEvent = events[Math.floor(Math.random() * events.length)];
+    await this.processAutomationTrigger(randomEvent.trigger, randomEvent.data);
+  }
+
+  // Simulate Trump tariff impact for demo/testing
+  async simulateTrumpTariffImpact(): Promise<void> {
+    const tariffScenarios = [
+      {
+        product_category: 'electronics',
+        origin_country: 'China',
+        old_rate: 7.5,
+        new_rate: 25.0,
+        impact: 17.5,
+        policy: 'Executive Order 2025-001'
+      },
+      {
+        product_category: 'textiles',
+        origin_country: 'China', 
+        old_rate: 15.0,
+        new_rate: 35.0,
+        impact: 20.0,
+        policy: 'Trade War Escalation Act 2025'
+      },
+      {
+        product_category: 'automotive',
+        origin_country: 'Mexico',
+        old_rate: 2.5,
+        new_rate: 15.0,
+        impact: 12.5,
+        policy: 'USMCA Renegotiation 2025'
+      }
+    ];
+
+    const scenario = tariffScenarios[Math.floor(Math.random() * tariffScenarios.length)];
+    
+    await this.processAutomationTrigger('tariff_change', {
+      product_category: scenario.product_category,
+      origin_country: scenario.origin_country,
+      tariff_rate_old: scenario.old_rate,
+      new_tariff_rate: scenario.new_rate,
+      cost_impact: scenario.impact,
+      policy_ref: scenario.policy,
+      description: `Trump tariff increase: ${scenario.product_category} from ${scenario.origin_country}`,
+      trump_tariff: true
+    });
   }
 }
 

@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { mcpClient, MCPServer } from '@/lib/mcp-client';
 import { mcpAutomationEngine } from '@/lib/mcp-automation-engine';
+import SupplyChainDashboard from '@/components/dashboard/SupplyChainDashboard';
+import { TariffMonitor } from '@/components/dashboard/TariffMonitor';
 import { 
   Plus, 
   Server, 
@@ -22,7 +24,9 @@ import {
   CheckCircle,
   AlertCircle,
   Play,
-  Pause
+  Pause,
+  DollarSign,
+  Globe
 } from 'lucide-react';
 
 export default function MCPDashboard() {
@@ -103,7 +107,7 @@ export default function MCPDashboard() {
   return (
     <AppProvider>
       <PageLayout>
-        <div className="container mx-auto p-6">
+        <div className="container mx-auto p-6" data-tour="mcp-dashboard">
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
             <Network className="h-8 w-8" />
@@ -130,12 +134,26 @@ export default function MCPDashboard() {
           )}
         </div>
 
-        <Tabs defaultValue="automation" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="automation">Automation</TabsTrigger>
+        <Tabs defaultValue="supply-chain" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="supply-chain" data-tour="supply-chain-tab">Supply Chain</TabsTrigger>
+            <TabsTrigger value="tariff-monitor" data-tour="tariff-tab">Tariff Monitor</TabsTrigger>
+            <TabsTrigger value="automation" data-tour="automation-tab">Automation</TabsTrigger>
             <TabsTrigger value="servers">Server Management</TabsTrigger>
             <TabsTrigger value="overview">Overview</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="supply-chain">
+            <div data-tour="supply-chain-dashboard">
+              <SupplyChainDashboard />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="tariff-monitor">
+            <div data-tour="tariff-monitor">
+              <TariffMonitor />
+            </div>
+          </TabsContent>
 
           <TabsContent value="automation" className="space-y-6">
             {/* Automation Statistics */}
