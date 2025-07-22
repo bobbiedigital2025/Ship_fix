@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import PageLayout from '@/components/PageLayout';
-import AISetupChat from '../components/ai/AISetupChat';
+import SmartAIAgent from '../components/ai/SmartAIAgent';
 import { TourSelector } from '@/components/ui/TourSelector';
 import { GuidedTour } from '@/components/ui/GuidedTour';
 import { useTourManager } from '@/hooks/use-tour-manager';
@@ -51,7 +51,7 @@ const AIAssistant: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <AISetupChat />
+                <SmartAIAgent />
               </CardContent>
             </Card>
           </TabsContent>

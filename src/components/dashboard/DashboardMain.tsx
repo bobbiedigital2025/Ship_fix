@@ -3,6 +3,7 @@ import TrackingCard from './TrackingCard';
 import SupplierTable from './SupplierTable';
 import AlertsPanel from './AlertsPanel';
 import OptimizationPanel from './OptimizationPanel';
+import SmartAIAgent from '@/components/ai/SmartAIAgent';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   Package, 
@@ -10,12 +11,27 @@ import {
   AlertTriangle, 
   TrendingUp,
   Clock,
-  CheckCircle
+  CheckCircle,
+  Bot
 } from 'lucide-react';
 
 const DashboardMain: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
+      {/* AI Assistant - Main Feature */}
+      <div className="mb-8">
+        <div className="text-center mb-4">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center justify-center gap-2">
+            <Bot className="w-6 h-6 text-blue-600" />
+            AI-Powered Supply Chain Assistant
+          </h2>
+          <p className="text-gray-600 mt-1">
+            Let our AI agent set up, optimize, and manage your entire shipping platform
+          </p>
+        </div>
+        <SmartAIAgent />
+      </div>
+
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <TrackingCard

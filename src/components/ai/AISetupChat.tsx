@@ -10,55 +10,115 @@ import {
   User, 
   Send, 
   CheckCircle, 
-  XCircle, 
-  Clock, 
-  Play,
-  RefreshCw,
-  BookOpen,
-  Code,
-  ExternalLink
+  Truck, 
+  Package, 
+  MapPin,
+  Heart,
+  DollarSign,
+  Star,
+  Zap,
+  Shield,
+  TrendingUp,
+  Globe
 } from 'lucide-react';
-import { aiAssistant, type AIResponse, type SetupStep } from '../../lib/ai-setup-assistant';
+
+// Simple customer questions for supply chain setup
+interface QuestionStep {
+  id: number;
+  question: string;
+  type: 'choice' | 'text';
+  choices?: string[];
+  icon: React.ReactNode;
+}
 
 interface ChatMessage {
   id: string;
   type: 'user' | 'ai';
   content: string;
   timestamp: Date;
-  aiResponse?: AIResponse;
 }
+
+interface CustomerInfo {
+  businessType: string;
+  shipFrom: string;
+  shipTo: string;
+  products: string;
+  volume: string;
+  currentChallenges: string;
+}
+
+const setupQuestions: QuestionStep[] = [
+  {
+    id: 1,
+    question: "Hi! 👋 What kind of business do you have?",
+    type: 'choice',
+    choices: ['Online Store', 'Manufacturer', 'Wholesaler', 'Retailer', 'Other'],
+    icon: <Package className="h-4 w-4" />
+  },
+  {
+    id: 2,
+    question: "Where do you ship FROM most of the time? (Like what city or country)",
+    type: 'text',
+    icon: <MapPin className="h-4 w-4" />
+  },
+  {
+    id: 3,
+    question: "Where do you ship TO? Pick your main area:",
+    type: 'choice',
+    choices: ['Same Country', 'International', 'North America', 'Europe', 'Asia', 'Everywhere'],
+    icon: <Truck className="h-4 w-4" />
+  },
+  {
+    id: 4,
+    question: "What do you sell? (Just tell me in simple words)",
+    type: 'text',
+    icon: <Package className="h-4 w-4" />
+  },
+  {
+    id: 5,
+    question: "How many packages do you ship per month?",
+    type: 'choice',
+    choices: ['1-50', '51-200', '201-1000', '1000+', 'Not sure'],
+    icon: <Truck className="h-4 w-4" />
+  },
+  {
+    id: 6,
+    question: "What's your biggest shipping headache right now?",
+    type: 'choice',
+    choices: ['Costs too much', 'Takes too long', 'Things get lost', 'Customs problems', 'Hard to track', 'All of the above!'],
+    icon: <Heart className="h-4 w-4" />
+  }
+];
 
 const AISetupChat: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputValue, setInputValue] = useState('');
+  const [currentStep, setCurrentStep] = useState(0);
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
+    businessType: '',
+    shipFrom: '',
+    shipTo: '',
+    products: '',
+    volume: '',
+    currentChallenges: ''
+  });
+  const [isComplete, setIsComplete] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [setupSteps, setSetupSteps] = useState<SetupStep[]>([]);
-  const [setupProgress, setSetupProgress] = useState({ completed: 0, total: 0, percentage: 0 });
-  const [isDiagnosticsRunning, setIsDiagnosticsRunning] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Add welcome message
+    // Start with a super friendly welcome
     const welcomeMessage: ChatMessage = {
       id: '1',
       type: 'ai',
-      content: "� Welcome to Ship_fix AI! I specialize in ecommerce, shipping optimization, supply chain visibility, and tariff analysis automation. I can help you configure MCP automation rules, optimize shipping routes, and set up trade compliance monitoring.",
-      timestamp: new Date(),
-      aiResponse: {
-        message: "I'm here to help you automate your supply chain operations with cutting-edge MCP technology!",
-        suggestions: [
-          "Setup supply chain automation",
-          "Configure shipping optimization",
-          "Setup tariff monitoring",
-          "Ask about database setup",
-          "Get help with environment configuration",
-          "Learn about support features",
-          "Deploy to production"
-        ]
-      }
+      content: "Hello! 😊 I'm your Ship_fix helper! I'll ask you a few super easy questions so I can set up the perfect shipping system for your business. Ready?",
+      timestamp: new Date()
     };
     setMessages([welcomeMessage]);
-    loadSetupProgress();
+    
+    // Start first question after a short delay
+    setTimeout(() => {
+      askNextQuestion();
+    }, 1500);
   }, []);
 
   useEffect(() => {
@@ -69,35 +129,106 @@ const AISetupChat: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const loadSetupProgress = async () => {
-    try {
-      const progress = await aiAssistant.getSetupProgress();
-      setSetupProgress(progress);
-    } catch (error) {
-      console.error('Failed to load setup progress:', error);
+  const askNextQuestion = () => {
+    if (currentStep < setupQuestions.length) {
+      const question = setupQuestions[currentStep];
+      const questionMessage: ChatMessage = {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: question.question,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, questionMessage]);
+    } else {
+      completeSetup();
     }
   };
 
-  const runDiagnostics = async () => {
-    setIsDiagnosticsRunning(true);
-    try {
-      const steps = await aiAssistant.runDiagnostics();
-      setSetupSteps(steps);
-      await loadSetupProgress();
-      
-      const diagnosticMessage: ChatMessage = {
-        id: Date.now().toString(),
+  const handleAnswer = (answer: string) => {
+    // Add user's answer to chat
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: answer,
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, userMessage]);
+
+    // Save the answer
+    const questionId = setupQuestions[currentStep].id;
+    const updatedInfo = { ...customerInfo };
+    
+    switch (questionId) {
+      case 1: updatedInfo.businessType = answer; break;
+      case 2: updatedInfo.shipFrom = answer; break;
+      case 3: updatedInfo.shipTo = answer; break;
+      case 4: updatedInfo.products = answer; break;
+      case 5: updatedInfo.volume = answer; break;
+      case 6: updatedInfo.currentChallenges = answer; break;
+    }
+    setCustomerInfo(updatedInfo);
+
+    // Move to next question
+    setCurrentStep(prev => prev + 1);
+    
+    // Ask next question after a brief delay
+    setTimeout(() => {
+      askNextQuestion();
+    }, 1000);
+  };
+
+  const completeSetup = () => {
+    setIsLoading(true);
+    
+    // Show completion message
+    const completionMessage: ChatMessage = {
+      id: Date.now().toString(),
+      type: 'ai',
+      content: "🎉 Perfect! I'm setting up your custom shipping system now...",
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, completionMessage]);
+
+    // Simulate AI setup process
+    setTimeout(() => {
+      const setupMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: `🔍 Diagnostics complete! I've checked ${steps.length} setup steps.`,
-        timestamp: new Date(),
-        aiResponse: {
-          message: "Here's what I found:",
-          suggestions: steps
-            .filter(step => step.status === 'error')
-            .map(step => `Fix: ${step.title}`)
-        }
+        content: `✨ All done! I've set up Ship_fix for your ${customerInfo.businessType.toLowerCase()} business. Your system is now optimized for shipping ${customerInfo.products} from ${customerInfo.shipFrom} to ${customerInfo.shipTo}. I've also added special features to help with "${customerInfo.currentChallenges.toLowerCase()}". You're ready to start saving money and time! 🚀`,
+        timestamp: new Date()
       };
-      setMessages(prev => [...prev, diagnosticMessage]);
+      setMessages(prev => [...prev, setupMessage]);
+      setIsComplete(true);
+      setIsLoading(false);
+    }, 3000);
+  };
+
+  const resetChat = () => {
+    setMessages([]);
+    setCurrentStep(0);
+    setCustomerInfo({
+      businessType: '',
+      shipFrom: '',
+      shipTo: '',
+      products: '',
+      volume: '',
+      currentChallenges: ''
+    });
+    setIsComplete(false);
+    setIsLoading(false);
+    
+    // Restart with welcome message
+    setTimeout(() => {
+      const welcomeMessage: ChatMessage = {
+        id: '1',
+        type: 'ai',
+        content: "Hello! 😊 I'm your Ship_fix helper! I'll ask you a few super easy questions so I can set up the perfect shipping system for your business. Ready?",
+        timestamp: new Date()
+      };
+      setMessages([welcomeMessage]);
+      setTimeout(() => askNextQuestion(), 1500);
+    }, 500);
+  };
     } catch (error) {
       console.error('Diagnostics failed:', error);
     } finally {
