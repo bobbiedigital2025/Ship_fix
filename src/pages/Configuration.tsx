@@ -39,10 +39,10 @@ const Configuration: React.FC = () => {
       <PageLayout>
         <div className="p-6 max-w-7xl mx-auto">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl font-bold text-foreground mb-2">
               {isAdmin() ? 'Platform Configuration' : 'Account Setup'}
             </h1>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               {isAdmin() 
                 ? 'Manage platform-wide settings and configurations'
                 : 'Configure your suppliers, shippers, and inventory settings'

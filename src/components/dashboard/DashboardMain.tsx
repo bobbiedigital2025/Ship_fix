@@ -21,11 +21,11 @@ const DashboardMain: React.FC = () => {
       {/* AI Assistant - Main Feature */}
       <div className="mb-8">
         <div className="text-center mb-4">
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center justify-center gap-2">
-            <Bot className="w-6 h-6 text-blue-600" />
+          <h2 className="text-2xl font-bold text-foreground flex items-center justify-center gap-2">
+            <Bot className="w-6 h-6 text-primary" />
             AI-Powered Supply Chain Assistant
           </h2>
-          <p className="text-gray-600 mt-1">
+          <p className="text-muted-foreground mt-1">
             Let our AI agent set up, optimize, and manage your entire shipping platform
           </p>
         </div>
