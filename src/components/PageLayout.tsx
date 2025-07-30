@@ -14,7 +14,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({ children }) => {
   const isMobile = useIsMobile();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Sidebar */}
       <Sidebar isOpen={sidebarOpen} onClose={toggleSidebar} />
       

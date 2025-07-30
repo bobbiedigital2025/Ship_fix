@@ -34,7 +34,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 px-4 py-3">
+    <header className="bg-card border-b border-border px-4 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={onMenuClick}>
@@ -42,8 +42,8 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           </Button>
           
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-gray-900">Supply Chain Platform</h1>
-            <Badge variant="secondary" className="bg-green-100 text-green-800">
+            <h1 className="text-xl font-bold text-foreground">Supply Chain Platform</h1>
+            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
               Live
             </Badge>
           </div>
@@ -51,7 +51,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
         <div className="flex items-center gap-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search orders, suppliers..."
               className="pl-10 w-64"
@@ -62,7 +62,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             variant="outline" 
             size="sm" 
             onClick={() => handleNavigation('/ai-assistant')}
-            className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+            className="bg-primary/5 border-primary/20 text-primary hover:bg-primary/10"
           >
             <Bot className="h-4 w-4 mr-2" />
             AI Help
