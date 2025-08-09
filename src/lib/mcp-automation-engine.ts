@@ -1,10 +1,81 @@
 import { createClient } from '@supabase/supabase-js';
 
+// Define more specific types instead of using 'any'
+interface RuleConditions {
+  threshold?: number;
+  percentage?: number;
+  amount?: number;
+  location?: string;
+  priority?: string;
+  [key: string]: string | number | boolean | undefined;
+}
+
+interface ActionConfig {
+  email?: string[];
+  webhook?: string;
+  threshold?: number;
+  message?: string;
+  delay?: number;
+  analysis_type?: string;
+  route_type?: string;
+  [key: string]: string | number | boolean | string[] | undefined;
+}
+
+interface ToolInputSchema {
+  type: 'object';
+  properties: Record<string, {
+    type: string;
+    description?: string;
+    required?: boolean;
+  }>;
+  required?: string[];
+  [key: string]: unknown;
+}
+
+// Supply chain data types
+interface AutomationEventData {
+  shipment_id?: string;
+  inventory_level?: number;
+  cost?: number;
+  location?: string;
+  priority?: string;
+  supplier_id?: string;
+  timestamp?: string;
+  [key: string]: string | number | boolean | undefined;
+}
+
+interface CostAnalysisResult {
+  shipping_cost: number;
+  tariff_cost: number;
+  landed_cost: number;
+  cost_variance: number;
+  recommendations: string[];
+  risk_factors: string[];
+  savings_opportunity: number;
+}
+
+interface AutomationStats {
+  total_rules: number;
+  active_rules: number;
+  shipments_processed_today: number;
+  cost_savings_percentage: number;
+  avg_route_optimization_time: string;
+  supply_chain_visibility: string;
+  compliance_success_rate: number;
+  tariff_analyses_performed: number;
+  inventory_alerts_sent: number;
+  disruptions_detected: number;
+  auto_reroutes_completed: number;
+  cost_variance_reduced: string;
+  supplier_performance_score: number;
+  delivery_accuracy: string;
+}
+
 interface MCPAutomationRule {
   id: string;
   name: string;
   trigger: 'shipment_created' | 'inventory_low' | 'tariff_change' | 'delay_detected' | 'cost_spike' | 'compliance_issue';
-  conditions: Record<string, any>;
+  conditions: RuleConditions;
   actions: MCPAction[];
   enabled: boolean;
   priority: number;
@@ -12,7 +83,7 @@ interface MCPAutomationRule {
 
 interface MCPAction {
   type: 'route_optimize' | 'alert_procurement' | 'update_pricing' | 'flag_compliance' | 'analyze_costs' | 'notify_stakeholders' | 'auto_reroute';
-  config: Record<string, any>;
+  config: ActionConfig;
 }
 
 interface MCPResource {
@@ -26,7 +97,7 @@ interface MCPResource {
 interface MCPTool {
   name: string;
   description: string;
-  inputSchema: Record<string, any>;
+  inputSchema: ToolInputSchema;
 }
 
 export class MCPAutomationEngine {
@@ -309,7 +380,7 @@ export class MCPAutomationEngine {
   // Process automation triggers
   async processAutomationTrigger(
     trigger: string, 
-    data: Record<string, any>
+    data: AutomationEventData
   ): Promise<void> {
     const applicableRules = this.automationRules
       .filter(rule => rule.trigger === trigger && rule.enabled)
@@ -325,8 +396,8 @@ export class MCPAutomationEngine {
 
   // Evaluate rule conditions
   private async evaluateConditions(
-    conditions: Record<string, any>, 
-    data: Record<string, any>
+    conditions: RuleConditions, 
+    data: AutomationEventData
   ): Promise<boolean> {
     // Simple condition evaluation - can be enhanced with complex logic
     for (const [key, value] of Object.entries(conditions)) {
@@ -342,7 +413,7 @@ export class MCPAutomationEngine {
   // Execute automation actions
   private async executeActions(
     actions: MCPAction[], 
-    data: Record<string, any>
+    data: AutomationEventData
   ): Promise<void> {
     for (const action of actions) {
       try {
@@ -356,7 +427,7 @@ export class MCPAutomationEngine {
   // Execute individual action
   private async executeAction(
     action: MCPAction, 
-    data: Record<string, any>
+    data: AutomationEventData
   ): Promise<void> {
     switch (action.type) {
       case 'analyze_costs':
@@ -391,9 +462,9 @@ export class MCPAutomationEngine {
 
   // Cost Analysis using MCP
   async performCostAnalysis(
-    data: Record<string, any>, 
-    config: Record<string, any>
-  ): Promise<any> {
+    data: AutomationEventData, 
+    config: ActionConfig
+  ): Promise<CostAnalysisResult> {
     console.log(`💰 Performing cost analysis: ${config.analysis_type || 'general'}`);
     
     // Simulate comprehensive cost analysis
@@ -424,8 +495,8 @@ export class MCPAutomationEngine {
 
   // Optimize shipping route
   private async optimizeShippingRoute(
-    data: Record<string, any>, 
-    config: Record<string, any>
+    data: AutomationEventData, 
+    config: ActionConfig
   ): Promise<void> {
     console.log(`🚚 Optimizing shipping route with priority: ${config.priority || 'balanced'}`);
     
@@ -446,8 +517,8 @@ export class MCPAutomationEngine {
 
   // Send procurement alert
   private async sendProcurementAlert(
-    data: Record<string, any>, 
-    config: Record<string, any>
+    data: AutomationEventData, 
+    config: ActionConfig
   ): Promise<void> {
     console.log(`� Sending procurement alert: ${config.urgency || 'normal'}`);
     
@@ -466,8 +537,8 @@ export class MCPAutomationEngine {
 
   // Update product pricing
   private async updateProductPricing(
-    data: Record<string, any>, 
-    config: Record<string, any>
+    data: AutomationEventData, 
+    config: ActionConfig
   ): Promise<void> {
     console.log(`💲 Updating product pricing due to cost changes`);
     
@@ -485,8 +556,8 @@ export class MCPAutomationEngine {
 
   // Flag compliance issue
   private async flagComplianceIssue(
-    data: Record<string, any>, 
-    config: Record<string, any>
+    data: AutomationEventData, 
+    config: ActionConfig
   ): Promise<void> {
     console.log(`⚠️ Flagging compliance issue for review`);
     
@@ -506,8 +577,8 @@ export class MCPAutomationEngine {
 
   // Notify stakeholders
   private async notifyStakeholders(
-    data: Record<string, any>, 
-    config: Record<string, any>
+    data: AutomationEventData, 
+    config: ActionConfig
   ): Promise<void> {
     console.log(`📧 Notifying stakeholders: ${config.urgency || 'normal'} priority`);
     
@@ -526,8 +597,8 @@ export class MCPAutomationEngine {
 
   // Auto-reroute shipment
   private async autoRerouteShipment(
-    data: Record<string, any>, 
-    config: Record<string, any>
+    data: AutomationEventData, 
+    config: ActionConfig
   ): Promise<void> {
     console.log(`🔄 Auto-rerouting shipment due to disruption`);
     
@@ -551,7 +622,7 @@ export class MCPAutomationEngine {
   // Log supply chain events
   private async logSupplyChainEvent(
     event_type: string, 
-    event_data: Record<string, any>
+    event_data: AutomationEventData
   ): Promise<void> {
     try {
       // Log to supply chain events table
@@ -577,7 +648,7 @@ export class MCPAutomationEngine {
   // Log tariff-specific events for Trump tariff monitoring
   private async logTariffEvent(
     event_type: string,
-    event_data: Record<string, any>
+    event_data: AutomationEventData
   ): Promise<void> {
     try {
       const tariffEvent = {
@@ -601,7 +672,7 @@ export class MCPAutomationEngine {
   }
 
   // Get automation statistics
-  async getAutomationStats(): Promise<Record<string, any>> {
+  async getAutomationStats(): Promise<AutomationStats> {
     return {
       total_rules: this.automationRules.length,
       active_rules: this.automationRules.filter(r => r.enabled).length,
