@@ -55,24 +55,6 @@ const SupportCenter: React.FC = () => {
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // If not authenticated, show login form
-  if (!isAuthenticated && !isLoading) {
-    return <LoginForm />;
-  }
-
-  // Show loading state while checking authentication
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <Shield className="w-12 h-12 text-blue-600 mx-auto animate-pulse" />
-          <p className="text-lg font-medium">Authenticating with MCP...</p>
-          <p className="text-sm text-gray-600">Establishing secure agent-to-agent connection</p>
-        </div>
-      </div>
-    );
-  }
-
   const {
     register,
     handleSubmit,
@@ -105,6 +87,24 @@ const SupportCenter: React.FC = () => {
     };
     loadFAQs();
   }, []);
+
+  // If not authenticated, show login form
+  if (!isAuthenticated && !isLoading) {
+    return <LoginForm />;
+  }
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Shield className="w-12 h-12 text-blue-600 mx-auto animate-pulse" />
+          <p className="text-lg font-medium">Authenticating with MCP...</p>
+          <p className="text-sm text-gray-600">Establishing secure agent-to-agent connection</p>
+        </div>
+      </div>
+    );
+  }
 
   const onSubmit = async (data: SupportFormData) => {
     setIsSubmitting(true);

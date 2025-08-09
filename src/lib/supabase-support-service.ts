@@ -214,11 +214,11 @@ export class SupabaseSupportService {
         customerName: newTicket.customer_name,
         customerEmail: newTicket.customer_email,
         company: newTicket.company,
-        category: newTicket.category as any,
-        severity: newTicket.severity as any,
+        category: newTicket.category as SupportTicket['category'],
+        severity: newTicket.severity as SupportTicket['severity'],
         subject: newTicket.subject,
         description: newTicket.description,
-        status: newTicket.status as any,
+        status: newTicket.status as SupportTicket['status'],
         priority: newTicket.priority,
         createdAt: new Date(newTicket.created_at),
         updatedAt: new Date(newTicket.updated_at)
@@ -311,11 +311,11 @@ export class SupabaseSupportService {
         customerName: ticket.customer_name,
         customerEmail: ticket.customer_email,
         company: ticket.company,
-        category: ticket.category as any,
-        severity: ticket.severity as any,
+        category: ticket.category as SupportTicket['category'],
+        severity: ticket.severity as SupportTicket['severity'],
         subject: ticket.subject,
         description: ticket.description,
-        status: ticket.status as any,
+        status: ticket.status as SupportTicket['status'],
         priority: ticket.priority,
         createdAt: new Date(ticket.created_at),
         updatedAt: new Date(ticket.updated_at)
@@ -353,11 +353,11 @@ export class SupabaseSupportService {
         customerName: updatedTicket.customer_name,
         customerEmail: updatedTicket.customer_email,
         company: updatedTicket.company,
-        category: updatedTicket.category as any,
-        severity: updatedTicket.severity as any,
+        category: updatedTicket.category as SupportTicket['category'],
+        severity: updatedTicket.severity as SupportTicket['severity'],
         subject: updatedTicket.subject,
         description: updatedTicket.description,
-        status: updatedTicket.status as any,
+        status: updatedTicket.status as SupportTicket['status'],
         priority: updatedTicket.priority,
         createdAt: new Date(updatedTicket.created_at),
         updatedAt: new Date(updatedTicket.updated_at)
@@ -411,7 +411,7 @@ export class SupabaseSupportService {
         name: customer.name,
         email: customer.email,
         company: customer.company || '',
-        tier: customer.tier as any,
+        tier: customer.tier as CustomerProfile['tier'],
         totalTickets: customer.total_tickets,
         openTickets: customer.open_tickets,
         avgResponseTime: customer.avg_response_time,
@@ -434,7 +434,7 @@ export class SupabaseSupportService {
   static async logInteraction(
     customerId: string, 
     interactionType: string, 
-    interactionData: any = {}
+    interactionData: Record<string, unknown> = {}
   ): Promise<void> {
     try {
       await supabase
