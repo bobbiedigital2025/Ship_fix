@@ -1,7 +1,27 @@
 import { Resend } from 'resend';
+import { validateData, emailDataSchema, validateEnvironment } from '@/lib/validation';
+import { 
+  safeAsync, 
+  withRetryAndTimeout, 
+  createErrorResponse, 
+  createSuccessResponse,
+  logError,
+  type ApiResponse 
+} from '@/lib/error-handling';
+
+// Validate environment variables on module load
+const envValidation = validateEnvironment();
+if (!envValidation.success) {
+  console.error('Environment validation failed:', envValidation.error);
+}
 
 // Initialize Resend with API key from environment
-const resend = new Resend(import.meta.env.VITE_RESEND_API_KEY || 'demo-key');
+const resendApiKey = import.meta.env.VITE_RESEND_API_KEY || 'demo-key';
+if (resendApiKey === 'demo-key') {
+  console.warn('Using demo Resend API key - emails will not be sent in production');
+}
+
+const resend = new Resend(resendApiKey);
 
 // Email sending interface
 export interface EmailData {
@@ -20,133 +40,234 @@ export interface BatchEmailData {
 // Default from email
 const DEFAULT_FROM = 'no-reply@bobbiedigital.com';
 
+// Rate limiting (simple in-memory implementation)
+class RateLimiter {
+  private requests: Map<string, number[]> = new Map();
+  private readonly maxRequests: number;
+  private readonly windowMs: number;
+
+  constructor(maxRequests: number = 10, windowMs: number = 60000) {
+    this.maxRequests = maxRequests;
+    this.windowMs = windowMs;
+  }
+
+  isAllowed(key: string): boolean {
+    const now = Date.now();
+    const requests = this.requests.get(key) || [];
+    
+    // Remove old requests outside the window
+    const validRequests = requests.filter(time => now - time < this.windowMs);
+    
+    if (validRequests.length >= this.maxRequests) {
+      return false;
+    }
+    
+    validRequests.push(now);
+    this.requests.set(key, validRequests);
+    return true;
+  }
+}
+
+const rateLimiter = new RateLimiter();
+
 /**
- * Send a single email
+ * Send a single email with validation and error handling
  */
-export async function sendEmail(emailData: EmailData) {
-  try {
-    const response = await resend.emails.send({
-      from: emailData.from || DEFAULT_FROM,
-      to: emailData.to,
-      subject: emailData.subject,
-      html: emailData.html,
-      text: emailData.text,
+export async function sendEmail(emailData: EmailData): Promise<ApiResponse<unknown>> {
+  // Validate input data
+  const validation = validateData(emailDataSchema, emailData);
+  if (!validation.success) {
+    logError('Email validation failed', validation.error, { emailData });
+    return createErrorResponse(
+      'Invalid email data',
+      { message: validation.error, code: 'VALIDATION_ERROR' }
+    );
+  }
+
+  const validatedData = validation.data;
+
+  // Check rate limiting
+  const rateLimitKey = Array.isArray(validatedData.to) 
+    ? validatedData.to.join(',') 
+    : validatedData.to;
+    
+  if (!rateLimiter.isAllowed(rateLimitKey)) {
+    logError('Rate limit exceeded', 'Too many email requests', { to: rateLimitKey });
+    return createErrorResponse(
+      'Rate limit exceeded. Please try again later.',
+      { message: 'Too many requests', code: 'RATE_LIMIT_EXCEEDED' }
+    );
+  }
+
+  return safeAsync(async () => {
+    return await withRetryAndTimeout(async () => {
+      const response = await resend.emails.send({
+        from: validatedData.from || DEFAULT_FROM,
+        to: validatedData.to,
+        subject: validatedData.subject,
+        html: validatedData.html,
+        text: validatedData.text,
+      });
+
+      console.log('Email sent successfully:', response);
+      return response;
+    }, {
+      maxRetries: 3,
+      timeoutMs: 30000,
+      timeoutMessage: 'Email sending timed out'
     });
-
-    console.log('Email sent successfully:', response);
-    return {
-      success: true,
-      data: response,
-      message: 'Email sent successfully'
-    };
-  } catch (error) {
-    console.error('Failed to send email:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      message: 'Failed to send email'
-    };
-  }
+  }, 'Failed to send email');
 }
 
 /**
- * Send batch emails
+ * Send batch emails with validation and error handling
  */
-export async function sendBatchEmails(batchData: BatchEmailData) {
-  try {
-    const emailsToSend = batchData.emails.map(email => ({
-      from: email.from || DEFAULT_FROM,
-      to: email.to,
-      subject: email.subject,
-      html: email.html,
-      text: email.text,
-    }));
-
-    const response = await resend.batch.send(emailsToSend);
-
-    console.log('Batch emails sent successfully:', response);
-    return {
-      success: true,
-      data: response,
-      message: 'Batch emails sent successfully'
-    };
-  } catch (error) {
-    console.error('Failed to send batch emails:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      message: 'Failed to send batch emails'
-    };
+export async function sendBatchEmails(batchData: BatchEmailData): Promise<ApiResponse<unknown>> {
+  // Validate that we have emails to send
+  if (!batchData.emails || batchData.emails.length === 0) {
+    return createErrorResponse(
+      'No emails provided for batch sending',
+      { message: 'Empty batch', code: 'EMPTY_BATCH' }
+    );
   }
-}
 
-/**
- * Get email status by ID
- */
-export async function getEmailStatus(emailId: string) {
-  try {
-    const response = await resend.emails.get(emailId);
+  // Validate each email in the batch
+  const validatedEmails: EmailData[] = [];
+  const validationErrors: string[] = [];
 
-    return {
-      success: true,
-      data: response,
-      message: 'Email status retrieved successfully'
-    };
-  } catch (error) {
-    console.error('Failed to get email status:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      message: 'Failed to get email status'
-    };
+  for (let i = 0; i < batchData.emails.length; i++) {
+    const validation = validateData(emailDataSchema, batchData.emails[i]);
+    if (!validation.success) {
+      validationErrors.push(`Email ${i + 1}: ${validation.error}`);
+    } else {
+      validatedEmails.push(validation.data);
+    }
   }
-}
 
-/**
- * Update scheduled email
- */
-export async function updateScheduledEmail(emailId: string, scheduledAt: string) {
-  try {
-    const response = await resend.emails.update({
-      id: emailId,
-      scheduledAt: scheduledAt,
+  if (validationErrors.length > 0) {
+    logError('Batch email validation failed', validationErrors, { batchSize: batchData.emails.length });
+    return createErrorResponse(
+      'Validation failed for some emails in batch',
+      { 
+        message: validationErrors.join('; '), 
+        code: 'BATCH_VALIDATION_ERROR',
+        details: validationErrors 
+      }
+    );
+  }
+
+  return safeAsync(async () => {
+    return await withRetryAndTimeout(async () => {
+      const emailsToSend = validatedEmails.map(email => ({
+        from: email.from || DEFAULT_FROM,
+        to: email.to,
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
+      }));
+
+      const response = await resend.batch.send(emailsToSend);
+
+      console.log('Batch emails sent successfully:', response);
+      return response;
+    }, {
+      maxRetries: 2, // Fewer retries for batch operations
+      timeoutMs: 60000, // Longer timeout for batch
+      timeoutMessage: 'Batch email sending timed out'
     });
-
-    return {
-      success: true,
-      data: response,
-      message: 'Email updated successfully'
-    };
-  } catch (error) {
-    console.error('Failed to update email:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      message: 'Failed to update email'
-    };
-  }
+  }, 'Failed to send batch emails');
 }
 
 /**
- * Cancel scheduled email
+ * Get email status by ID with validation
  */
-export async function cancelEmail(emailId: string) {
-  try {
-    const response = await resend.emails.cancel(emailId);
-
-    return {
-      success: true,
-      data: response,
-      message: 'Email cancelled successfully'
-    };
-  } catch (error) {
-    console.error('Failed to cancel email:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      message: 'Failed to cancel email'
-    };
+export async function getEmailStatus(emailId: string): Promise<ApiResponse<unknown>> {
+  // Validate email ID
+  if (!emailId || typeof emailId !== 'string' || emailId.trim().length === 0) {
+    return createErrorResponse(
+      'Invalid email ID provided',
+      { message: 'Email ID is required and must be a non-empty string', code: 'INVALID_EMAIL_ID' }
+    );
   }
+
+  return safeAsync(async () => {
+    return await withRetryAndTimeout(async () => {
+      const response = await resend.emails.get(emailId.trim());
+      return response;
+    }, {
+      maxRetries: 2,
+      timeoutMs: 15000,
+      timeoutMessage: 'Email status retrieval timed out'
+    });
+  }, 'Failed to get email status');
+}
+
+/**
+ * Update scheduled email with validation
+ */
+export async function updateScheduledEmail(emailId: string, scheduledAt: string): Promise<ApiResponse<unknown>> {
+  // Validate inputs
+  if (!emailId || typeof emailId !== 'string' || emailId.trim().length === 0) {
+    return createErrorResponse(
+      'Invalid email ID provided',
+      { message: 'Email ID is required', code: 'INVALID_EMAIL_ID' }
+    );
+  }
+
+  // Validate scheduledAt is a valid ISO string
+  const scheduledDate = new Date(scheduledAt);
+  if (isNaN(scheduledDate.getTime())) {
+    return createErrorResponse(
+      'Invalid scheduled date provided',
+      { message: 'Scheduled date must be a valid ISO string', code: 'INVALID_DATE' }
+    );
+  }
+
+  // Check if the scheduled date is in the future
+  if (scheduledDate <= new Date()) {
+    return createErrorResponse(
+      'Scheduled date must be in the future',
+      { message: 'Cannot schedule emails for past dates', code: 'PAST_DATE' }
+    );
+  }
+
+  return safeAsync(async () => {
+    return await withRetryAndTimeout(async () => {
+      const response = await resend.emails.update({
+        id: emailId.trim(),
+        scheduledAt: scheduledDate.toISOString(),
+      });
+      return response;
+    }, {
+      maxRetries: 2,
+      timeoutMs: 15000,
+      timeoutMessage: 'Email update timed out'
+    });
+  }, 'Failed to update email');
+}
+
+/**
+ * Cancel scheduled email with validation
+ */
+export async function cancelEmail(emailId: string): Promise<ApiResponse<unknown>> {
+  // Validate email ID
+  if (!emailId || typeof emailId !== 'string' || emailId.trim().length === 0) {
+    return createErrorResponse(
+      'Invalid email ID provided',
+      { message: 'Email ID is required', code: 'INVALID_EMAIL_ID' }
+    );
+  }
+
+  return safeAsync(async () => {
+    return await withRetryAndTimeout(async () => {
+      const response = await resend.emails.cancel(emailId.trim());
+      return response;
+    }, {
+      maxRetries: 2,
+      timeoutMs: 15000,
+      timeoutMessage: 'Email cancellation timed out'
+    });
+  }, 'Failed to cancel email');
 }
 
 // Email templates
