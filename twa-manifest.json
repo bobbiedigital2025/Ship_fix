@@ -1,0 +1,42 @@
+{
+  "packageId": "com.bobbiedigital.shipfix",
+  "host": "shipfix.bobbiedigital.com",
+  "name": "Ship_fix",
+  "launcherName": "Ship_fix",
+  "display": "standalone",
+  "themeColor": "#3B82F6",
+  "navigationColor": "#3B82F6",
+  "navigationColorDark": "#1E40AF",
+  "navigationDividerColor": "#E5E7EB",
+  "navigationDividerColorDark": "#374151",
+  "backgroundColor": "#FFFFFF",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://shipfix.bobbiedigital.com/icon-512.png",
+  "maskableIconUrl": "https://shipfix.bobbiedigital.com/icon-512-maskable.png",
+  "monochromeIconUrl": "https://shipfix.bobbiedigital.com/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "alias": "shipfix-key",
+    "fullName": "CN=Bobbie Digital, O=Bobbie Digital, L=San Francisco, ST=CA, C=US"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "url": "/",
+      "icon": "icon-192.png"
+    },
+    {
+      "name": "AI Assistant",
+      "short_name": "AI Assistant", 
+      "url": "/ai-assistant",
+      "icon": "icon-192.png"
+    }
+  ],
+  "generatorApp": "PWABuilder",
+  "webManifestUrl": "https://shipfix.bobbiedigital.com/manifest.json",
+  "includeSourceCode": false
+}
