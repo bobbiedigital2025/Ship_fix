@@ -4,7 +4,7 @@
 interface ServiceWorkerMessage {
   type: string;
   version?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 class ServiceWorkerManager {
@@ -188,8 +188,8 @@ class ServiceWorkerManager {
     return new Promise((resolve) => {
       const messageChannel = new MessageChannel();
       
-      messageChannel.port1.onmessage = (event) => {
-        const data: ServiceWorkerMessage = event.data;
+      messageChannel.port1.onmessage = (event: MessageEvent) => {
+        const data: ServiceWorkerMessage = event.data as ServiceWorkerMessage;
         resolve(data.version || null);
       };
 
