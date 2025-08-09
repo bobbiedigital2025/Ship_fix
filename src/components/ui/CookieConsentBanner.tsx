@@ -108,7 +108,7 @@ export function CookieConsentBanner({ onAccept, onDecline }: CookieConsentBanner
       document.head.appendChild(script);
 
       window.dataLayer = window.dataLayer || [];
-      function gtag(...args: any[]) {
+      function gtag(...args: unknown[]) {
         window.dataLayer.push(args);
       }
       window.gtag = gtag;
@@ -130,7 +130,7 @@ export function CookieConsentBanner({ onAccept, onDecline }: CookieConsentBanner
       document.head.appendChild(script);
 
       window.dataLayer = window.dataLayer || [];
-      function gtag(...args: any[]) {
+      function gtag(...args: unknown[]) {
         window.dataLayer.push(args);
       }
       window.gtag = gtag;

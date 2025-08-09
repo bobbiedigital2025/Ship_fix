@@ -157,7 +157,7 @@ const DashboardConfig: React.FC = () => {
                         </div>
                         <div>
                           <Label htmlFor="widgetSize">Size</Label>
-                          <Select onValueChange={(value) => setNewWidget({...newWidget, size: value as any})}>
+                          <Select onValueChange={(value) => setNewWidget({...newWidget, size: value as 'small' | 'medium' | 'large'})}>
                             <SelectTrigger>
                               <SelectValue placeholder="Select size" />
                             </SelectTrigger>

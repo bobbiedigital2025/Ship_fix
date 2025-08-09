@@ -172,7 +172,7 @@ export class ResendEmailService {
     customerEmail: string, 
     customerName: string, 
     orderId: string, 
-    orderDetails: any
+    orderDetails: Record<string, unknown>
   ) {
     return await sendEmail({
       to: customerEmail,

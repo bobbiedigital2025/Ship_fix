@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -120,7 +120,7 @@ const AISetupChat: React.FC = () => {
     setTimeout(() => {
       askNextQuestion();
     }, 1500);
-  }, []);
+  }, [askNextQuestion]);
 
   useEffect(() => {
     scrollToBottom();
@@ -130,7 +130,7 @@ const AISetupChat: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const askNextQuestion = () => {
+  const askNextQuestion = useCallback(() => {
     if (currentStep < setupQuestions.length) {
       const question = setupQuestions[currentStep];
       const questionMessage: ChatMessage = {
@@ -143,7 +143,7 @@ const AISetupChat: React.FC = () => {
     } else {
       completeSetup();
     }
-  };
+  }, [currentStep, completeSetup]);
 
   const handleAnswer = (answer: string) => {
     // Add user's answer to chat
@@ -178,7 +178,7 @@ const AISetupChat: React.FC = () => {
     }, 1000);
   };
 
-  const completeSetup = () => {
+  const completeSetup = useCallback(() => {
     setIsLoading(true);
     
     // Show completion message
@@ -202,7 +202,7 @@ const AISetupChat: React.FC = () => {
       setIsComplete(true);
       setIsLoading(false);
     }, 3000);
-  };
+  }, [customerInfo.businessType, customerInfo.products, customerInfo.shipFrom, customerInfo.shipTo, customerInfo.currentChallenges]);
 
   const resetChat = () => {
     setMessages([]);
