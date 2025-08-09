@@ -3,7 +3,7 @@ import PageLayout from '@/components/PageLayout';
 import { AppProvider } from '@/contexts/AppContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Users, Truck, Package, Bell, BarChart3, Zap } from 'lucide-react';
+import { Settings, Users, Truck, Package, Bell, BarChart3, Zap, TestTube } from 'lucide-react';
 import { usePermissions } from '@/components/auth/RoleGuard';
 import SupplierConfig from '@/components/configuration/SupplierConfig';
 import ShipperConfig from '@/components/configuration/ShipperConfig';
@@ -11,6 +11,7 @@ import InventoryConfig from '@/components/configuration/InventoryConfig';
 import AlertConfig from '@/components/configuration/AlertConfig';
 import DashboardConfig from '@/components/configuration/DashboardConfig';
 import AutomationConfig from '@/components/configuration/AutomationConfig';
+import { ValidationTestComponent } from '@/components/testing/ValidationTestComponent';
 
 const Configuration: React.FC = () => {
   const { isAdmin, isCustomer } = usePermissions();
@@ -29,6 +30,7 @@ const Configuration: React.FC = () => {
     { id: 'alerts', label: 'Alerts', icon: Bell, component: AlertConfig },
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, component: DashboardConfig },
     { id: 'automation', label: 'Automation', icon: Zap, component: AutomationConfig },
+    { id: 'testing', label: 'Validation Tests', icon: TestTube, component: ValidationTestComponent },
   ];
 
   const tabs = isAdmin() ? adminTabs : customerTabs;
