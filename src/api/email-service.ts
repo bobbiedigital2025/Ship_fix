@@ -8,6 +8,8 @@ import {
   type EmailData,
   type BatchEmailData
 } from './email';
+import { validateData, emailSchema } from '@/lib/validation';
+import { logError, type ApiResponse } from '@/lib/error-handling';
 
 /**
  * Email Service Class - Higher level wrapper for email operations
@@ -18,13 +20,34 @@ export class ResendEmailService {
   private static readonly COMPANY_NAME = import.meta.env.VITE_COMPANY_NAME || 'Your Company';
 
   /**
-   * Send a welcome email to a new user
+   * Send a welcome email to a new user with validation
    */
-  static async sendWelcomeEmail(userEmail: string, userName: string) {
-    const template = emailTemplates.welcome(userName, this.COMPANY_NAME);
+  static async sendWelcomeEmail(userEmail: string, userName: string): Promise<ApiResponse<unknown>> {
+    // Validate inputs
+    const emailValidation = validateData(emailSchema, userEmail);
+    if (!emailValidation.success) {
+      logError('Invalid email for welcome email', emailValidation.error, { userEmail });
+      return {
+        success: false,
+        error: `Invalid email address: ${emailValidation.error}`,
+        message: 'Failed to send welcome email'
+      };
+    }
+
+    if (!userName || typeof userName !== 'string' || userName.trim().length === 0) {
+      logError('Invalid username for welcome email', 'Username is required', { userName });
+      return {
+        success: false,
+        error: 'Username is required and must be a non-empty string',
+        message: 'Failed to send welcome email'
+      };
+    }
+
+    const sanitizedUserName = userName.trim().slice(0, 100); // Prevent excessively long names
+    const template = emailTemplates.welcome(sanitizedUserName, this.COMPANY_NAME);
     
     return await sendEmail({
-      to: userEmail,
+      to: emailValidation.data,
       from: this.DEFAULT_FROM,
       subject: template.subject,
       html: template.html,
@@ -40,7 +63,7 @@ export class ResendEmailService {
     customerName: string, 
     ticketId: string, 
     subject: string
-  ) {
+  ): Promise<ApiResponse<unknown>> {
     const template = emailTemplates.supportTicket(ticketId, customerName, subject);
     
     return await sendEmail({
@@ -55,7 +78,7 @@ export class ResendEmailService {
   /**
    * Send notification to support team
    */
-  static async notifySupportTeam(subject: string, message: string, priority: 'low' | 'medium' | 'high' = 'medium') {
+  static async notifySupportTeam(subject: string, message: string, priority: 'low' | 'medium' | 'high' = 'medium'): Promise<ApiResponse<unknown>> {
     const priorityEmoji = {
       low: '🟢',
       medium: '🟡', 
@@ -91,7 +114,7 @@ export class ResendEmailService {
     title: string, 
     message: string, 
     actionUrl?: string
-  ) {
+  ): Promise<ApiResponse<unknown>> {
     const template = emailTemplates.notification(title, message, actionUrl);
     
     return await sendEmail({
@@ -110,7 +133,7 @@ export class ResendEmailService {
     recipients: string[], 
     title: string, 
     message: string
-  ) {
+  ): Promise<ApiResponse<unknown>> {
     const template = emailTemplates.notification(title, message);
     
     const emails = recipients.map(recipient => ({
@@ -127,7 +150,7 @@ export class ResendEmailService {
   /**
    * Send custom email with full control
    */
-  static async sendCustomEmail(emailData: EmailData) {
+  static async sendCustomEmail(emailData: EmailData): Promise<ApiResponse<unknown>> {
     return await sendEmail({
       ...emailData,
       from: emailData.from || this.DEFAULT_FROM
@@ -137,7 +160,7 @@ export class ResendEmailService {
   /**
    * Send scheduled email (future delivery)
    */
-  static async sendScheduledEmail(emailData: EmailData, scheduledDate: Date) {
+  static async sendScheduledEmail(emailData: EmailData, scheduledDate: Date): Promise<ApiResponse<unknown>> {
     // Note: Resend handles scheduling during the send operation
     // For now, we'll send immediately but this could be extended
     console.log(`Email scheduled for: ${scheduledDate.toISOString()}`);
@@ -147,21 +170,21 @@ export class ResendEmailService {
   /**
    * Get email delivery status
    */
-  static async getDeliveryStatus(emailId: string) {
+  static async getDeliveryStatus(emailId: string): Promise<ApiResponse<unknown>> {
     return await getEmailStatus(emailId);
   }
 
   /**
    * Update scheduled email
    */
-  static async updateScheduledEmail(emailId: string, newScheduledDate: Date) {
+  static async updateScheduledEmail(emailId: string, newScheduledDate: Date): Promise<ApiResponse<unknown>> {
     return await updateScheduledEmail(emailId, newScheduledDate.toISOString());
   }
 
   /**
    * Cancel a scheduled email
    */
-  static async cancelScheduledEmail(emailId: string) {
+  static async cancelScheduledEmail(emailId: string): Promise<ApiResponse<unknown>> {
     return await cancelEmail(emailId);
   }
 
@@ -172,8 +195,8 @@ export class ResendEmailService {
     customerEmail: string, 
     customerName: string, 
     orderId: string, 
-    orderDetails: any
-  ) {
+    orderDetails: Record<string, unknown>
+  ): Promise<ApiResponse<unknown>> {
     return await sendEmail({
       to: customerEmail,
       from: this.DEFAULT_FROM,
@@ -198,7 +221,7 @@ export class ResendEmailService {
   /**
    * Send password reset email
    */
-  static async sendPasswordReset(userEmail: string, resetUrl: string, userName?: string) {
+  static async sendPasswordReset(userEmail: string, resetUrl: string, userName?: string): Promise<ApiResponse<unknown>> {
     return await sendEmail({
       to: userEmail,
       from: this.DEFAULT_FROM,

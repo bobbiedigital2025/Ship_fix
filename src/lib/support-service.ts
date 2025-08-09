@@ -1,6 +1,19 @@
 import { SupportTicket, SupportStats, FAQ, CustomerProfile } from '@/types/support';
 import { MCPCommunicationService, MCPAuthService } from './mcp-auth-service';
 import { ResendEmailService } from '@/api/email-service';
+import { 
+  validateData, 
+  supportTicketSchema, 
+  validateAndSanitize,
+  type ValidationResult 
+} from './validation';
+import { 
+  safeAsync, 
+  logError, 
+  createErrorResponse, 
+  createSuccessResponse,
+  type ApiResponse 
+} from './error-handling';
 
 // In-memory storage for tickets (in production, this would be a database)
 let ticketStorage: SupportTicket[] = [
@@ -112,107 +125,127 @@ const mockFAQs: FAQ[] = [
 ];
 
 export class SupportService {
-  static async createTicket(ticket: Omit<SupportTicket, 'id' | 'createdAt' | 'updatedAt' | 'status'>): Promise<SupportTicket> {
-    return new Promise((resolve, reject) => {
-      const processTicket = async () => {
-        try {
-          // Generate unique ID
-          const id = `TICKET-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-          
-          const newTicket: SupportTicket = {
-            ...ticket,
-            id,
-            status: 'open',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-          
-          // Add to storage (this persists the ticket!)
-          ticketStorage.unshift(newTicket); // Add to beginning for newest first
-          
-          console.log('🎫 New support ticket created:', {
-            id: newTicket.id,
-            subject: newTicket.subject,
-            customerEmail: newTicket.customerEmail,
-            severity: newTicket.severity,
-            category: newTicket.category
-          });
-
-          // Trigger real-time notification for admin dashboard
-          if (typeof window !== 'undefined') {
-            const event = new CustomEvent('new-support-ticket', { detail: newTicket });
-            window.dispatchEvent(event);
-          }
-          
-          // Send email notifications using Resend
-          try {
-            // Send confirmation to customer
-            await ResendEmailService.sendSupportTicketConfirmation(
-              newTicket.customerEmail,
-              newTicket.customerName,
-              newTicket.id,
-              newTicket.subject
-            );
-            
-            // Notify support team
-            const priorityLevel = newTicket.severity === 'critical' || newTicket.severity === 'high' ? 'high' : 
-                                newTicket.severity === 'medium' ? 'medium' : 'low';
-            
-            await ResendEmailService.notifySupportTeam(
-              `New ${newTicket.severity.toUpperCase()} Support Ticket: ${newTicket.subject}`,
-              `
-                A new support ticket has been submitted and requires attention.
-                
-                **Ticket Details:**
-                - ID: ${newTicket.id}
-                - Customer: ${newTicket.customerName} (${newTicket.customerEmail})
-                - Company: ${newTicket.company || 'Not specified'}
-                - Category: ${newTicket.category}
-                - Severity: ${newTicket.severity}
-                - Subject: ${newTicket.subject}
-                
-                **Description:**
-                ${newTicket.description}
-                
-                **Created:** ${newTicket.createdAt.toLocaleString()}
-                
-                Please review and respond promptly based on the severity level.
-              `,
-              priorityLevel
-            );
-            
-            console.log('✅ Email notifications sent successfully');
-          } catch (emailError) {
-            console.warn('⚠️ Email notification failed:', emailError);
-            // Don't fail the ticket creation if email fails
-          }
-          
-          // Try MCP notifications (with fallback for development)
-          try {
-            const isAuthenticated = await MCPAuthService.validateSession();
-            if (!isAuthenticated) {
-              await MCPAuthService.authenticateAgent('support-app', {
-                appId: 'supply-chain-platform',
-                secret: 'development-secret'
-              });
-            }
-            
-            await MCPCommunicationService.sendSupportTicketNotification(newTicket);
-            await MCPCommunicationService.sendCustomerConfirmation(newTicket);
-            console.log('✅ MCP notifications sent successfully');
-          } catch (mcpError) {
-            console.warn('⚠️ MCP communication failed (this is normal in development):', mcpError);
-          }
-          
-          // Simulate network delay
-          setTimeout(() => resolve(newTicket), 1000);
-        } catch (error) {
-          reject(error);
+  static async createTicket(ticket: Omit<SupportTicket, 'id' | 'createdAt' | 'updatedAt' | 'status'>): Promise<ApiResponse<SupportTicket>> {
+    // Validate and sanitize input data
+    const validation = validateAndSanitize(
+      supportTicketSchema, 
+      ticket,
+      ['subject', 'description', 'customerName', 'company'] // Fields to sanitize
+    );
+    
+    if (!validation.success) {
+      logError('Support ticket validation failed', validation.error, { ticket });
+      return createErrorResponse(
+        'Invalid ticket data provided',
+        { 
+          message: validation.error, 
+          code: 'VALIDATION_ERROR',
+          details: validation.details 
         }
+      );
+    }
+
+    const validatedTicket = validation.data;
+
+    return safeAsync(async () => {
+      // Generate unique ID
+      const id = `TICKET-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      const newTicket: SupportTicket = {
+        ...validatedTicket,
+        id,
+        status: 'open',
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
       
-      processTicket();
-    });
+      // Add to storage (this persists the ticket!)
+      ticketStorage.unshift(newTicket); // Add to beginning for newest first
+      
+      console.log('🎫 New support ticket created:', {
+        id: newTicket.id,
+        subject: newTicket.subject,
+        customerEmail: newTicket.customerEmail,
+        severity: newTicket.severity,
+        category: newTicket.category
+      });
+
+      // Trigger real-time notification for admin dashboard
+      if (typeof window !== 'undefined') {
+        const event = new CustomEvent('new-support-ticket', { detail: newTicket });
+        window.dispatchEvent(event);
+      }
+      
+      // Send email notifications using Resend (with error handling)
+      try {
+        // Send confirmation to customer
+        const customerEmailResult = await ResendEmailService.sendSupportTicketConfirmation(
+          newTicket.customerEmail,
+          newTicket.customerName,
+          newTicket.id,
+          newTicket.subject
+        );
+        
+        if (!customerEmailResult.success) {
+          logError('Customer confirmation email failed', customerEmailResult.error, { ticketId: newTicket.id });
+        }
+        
+        // Notify support team
+        const priorityLevel = newTicket.severity === 'critical' || newTicket.severity === 'high' ? 'high' : 
+                            newTicket.severity === 'medium' ? 'medium' : 'low';
+        
+        const supportEmailResult = await ResendEmailService.notifySupportTeam(
+          `New ${newTicket.severity.toUpperCase()} Support Ticket: ${newTicket.subject}`,
+          `
+            A new support ticket has been submitted and requires attention.
+            
+            **Ticket Details:**
+            - ID: ${newTicket.id}
+            - Customer: ${newTicket.customerName} (${newTicket.customerEmail})
+            - Company: ${newTicket.company || 'Not specified'}
+            - Category: ${newTicket.category}
+            - Severity: ${newTicket.severity}
+            - Subject: ${newTicket.subject}
+            
+            **Description:**
+            ${newTicket.description}
+            
+            **Created:** ${newTicket.createdAt.toLocaleString()}
+            
+            Please review and respond promptly based on the severity level.
+          `,
+          priorityLevel
+        );
+        
+        if (!supportEmailResult.success) {
+          logError('Support team notification email failed', supportEmailResult.error, { ticketId: newTicket.id });
+        }
+        
+        console.log('✅ Email notifications sent successfully');
+      } catch (emailError) {
+        logError('Email notification failed', emailError, { ticketId: newTicket.id });
+        // Don't fail the ticket creation if email fails
+      }
+      
+      // Try MCP notifications (with fallback for development)
+      try {
+        const isAuthenticated = await MCPAuthService.validateSession();
+        if (!isAuthenticated) {
+          await MCPAuthService.authenticateAgent('support-app', {
+            appId: 'supply-chain-platform',
+            secret: 'development-secret'
+          });
+        }
+        
+        await MCPCommunicationService.sendSupportTicketNotification(newTicket);
+        await MCPCommunicationService.sendCustomerConfirmation(newTicket);
+        console.log('✅ MCP notifications sent successfully');
+      } catch (mcpError) {
+        logError('MCP communication failed (normal in development)', mcpError, { ticketId: newTicket.id });
+      }
+      
+      return newTicket;
+    }, 'Failed to create support ticket');
   }
 
   static async getTickets(): Promise<SupportTicket[]> {
@@ -234,37 +267,77 @@ export class SupportService {
     });
   }
 
-  static async updateTicketStatus(id: string, status: 'open' | 'in-progress' | 'resolved' | 'closed'): Promise<SupportTicket | null> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const ticketIndex = ticketStorage.findIndex(t => t.id === id);
-        if (ticketIndex !== -1) {
-          ticketStorage[ticketIndex] = {
-            ...ticketStorage[ticketIndex],
-            status,
-            updatedAt: new Date()
-          };
-          console.log(`🔄 Ticket ${id} status updated to: ${status}`);
-          resolve(ticketStorage[ticketIndex]);
-        } else {
-          resolve(null);
+  static async updateTicketStatus(
+    id: string, 
+    status: 'open' | 'in-progress' | 'resolved' | 'closed'
+  ): Promise<ApiResponse<SupportTicket>> {
+    // Validate inputs
+    if (!id || typeof id !== 'string' || id.trim().length === 0) {
+      return createErrorResponse(
+        'Invalid ticket ID provided',
+        { message: 'Ticket ID is required and must be a non-empty string', code: 'INVALID_TICKET_ID' }
+      );
+    }
+
+    const validStatuses = ['open', 'in-progress', 'resolved', 'closed'] as const;
+    if (!validStatuses.includes(status)) {
+      return createErrorResponse(
+        'Invalid ticket status provided',
+        { 
+          message: `Status must be one of: ${validStatuses.join(', ')}`, 
+          code: 'INVALID_STATUS',
+          details: { validStatuses }
         }
-      }, 300);
-    });
+      );
+    }
+
+    return safeAsync(async () => {
+      const ticketIndex = ticketStorage.findIndex(t => t.id === id.trim());
+      if (ticketIndex === -1) {
+        throw new Error(`Ticket with ID ${id} not found`);
+      }
+
+      const updatedTicket = {
+        ...ticketStorage[ticketIndex],
+        status,
+        updatedAt: new Date()
+      };
+
+      ticketStorage[ticketIndex] = updatedTicket;
+      console.log(`🔄 Ticket ${id} status updated to: ${status}`);
+      
+      return updatedTicket;
+    }, 'Failed to update ticket status');
   }
 
-  static async deleteTicket(id: string): Promise<boolean> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const initialLength = ticketStorage.length;
-        ticketStorage = ticketStorage.filter(t => t.id !== id);
-        const wasDeleted = ticketStorage.length < initialLength;
-        if (wasDeleted) {
-          console.log(`🗑️ Ticket ${id} deleted successfully`);
-        }
-        resolve(wasDeleted);
-      }, 300);
-    });
+  static async deleteTicket(id: string): Promise<ApiResponse<boolean>> {
+    // Validate input
+    if (!id || typeof id !== 'string' || id.trim().length === 0) {
+      return createErrorResponse(
+        'Invalid ticket ID provided',
+        { message: 'Ticket ID is required and must be a non-empty string', code: 'INVALID_TICKET_ID' }
+      );
+    }
+
+    return safeAsync(async () => {
+      const initialLength = ticketStorage.length;
+      const trimmedId = id.trim();
+      
+      // Check if ticket exists before deletion
+      const ticketExists = ticketStorage.some(t => t.id === trimmedId);
+      if (!ticketExists) {
+        throw new Error(`Ticket with ID ${trimmedId} not found`);
+      }
+      
+      ticketStorage = ticketStorage.filter(t => t.id !== trimmedId);
+      const wasDeleted = ticketStorage.length < initialLength;
+      
+      if (wasDeleted) {
+        console.log(`🗑️ Ticket ${trimmedId} deleted successfully`);
+      }
+      
+      return wasDeleted;
+    }, 'Failed to delete ticket');
   }
 
   // Enhanced method to send email notifications using our Resend integration
