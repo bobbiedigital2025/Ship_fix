@@ -108,10 +108,10 @@ export function CookieConsentBanner({ onAccept, onDecline }: CookieConsentBanner
       document.head.appendChild(script);
 
       window.dataLayer = window.dataLayer || [];
-      function gtag(...args: any[]) {
-        window.dataLayer.push(args);
+      function gtag(command: string, ...args: unknown[]) {
+        window.dataLayer.push([command, ...args]);
       }
-      window.gtag = gtag;
+      window.gtag = gtag as GtagCommand;
       
       gtag('js', new Date());
       gtag('config', 'GA_MEASUREMENT_ID', {
@@ -130,10 +130,10 @@ export function CookieConsentBanner({ onAccept, onDecline }: CookieConsentBanner
       document.head.appendChild(script);
 
       window.dataLayer = window.dataLayer || [];
-      function gtag(...args: any[]) {
-        window.dataLayer.push(args);
+      function gtag(command: string, ...args: unknown[]) {
+        window.dataLayer.push([command, ...args]);
       }
-      window.gtag = gtag;
+      window.gtag = gtag as GtagCommand;
       
       gtag('js', new Date());
       gtag('config', 'AW-CONVERSION_ID');
@@ -362,7 +362,7 @@ export const isCookieAllowed = (type: keyof CookiePreferences): boolean => {
 };
 
 // Google Analytics tracking function that respects cookie consent
-export const trackEvent = (eventName: string, parameters?: Record<string, any>) => {
+export const trackEvent = (eventName: string, parameters?: Record<string, unknown>) => {
   if (isCookieAllowed('analytics') && typeof window !== 'undefined' && window.gtag) {
     window.gtag('event', eventName, parameters);
   }
@@ -379,10 +379,17 @@ export const trackConversion = (conversionId: string, conversionLabel: string, v
   }
 };
 
+// Google Tag Manager / gtag types
+interface GtagCommand {
+  (command: 'config', targetId: string, config?: Record<string, unknown>): void;
+  (command: 'event', eventName: string, eventData?: Record<string, unknown>): void;
+  (command: 'consent', action: string, parameters: Record<string, unknown>): void;
+}
+
 // Declare global gtag function for TypeScript
 declare global {
   interface Window {
-    gtag: (...args: any[]) => void;
-    dataLayer: any[];
+    gtag: GtagCommand;
+    dataLayer: Array<Record<string, unknown>>;
   }
 }

@@ -142,7 +142,7 @@ export const trackUserRegistration = (registrationType: string, customerTier: st
   }
 };
 
-export const trackPurchase = (transactionId: string, value: number, items: any[]) => {
+export const trackPurchase = (transactionId: string, value: number, items: GoogleAnalyticsItem[]) => {
   if (typeof window !== 'undefined' && window.gtag) {
     window.gtag('event', 'purchase', {
       transaction_id: transactionId,
@@ -172,10 +172,27 @@ export const updateConsentMode = (preferences: {
   }
 };
 
+// Google Analytics item interface for ecommerce tracking
+interface GoogleAnalyticsItem {
+  item_id: string;
+  item_name: string;
+  category?: string;
+  price?: number;
+  quantity?: number;
+  currency?: string;
+}
+
+// Google Tag Manager / gtag types
+interface GtagCommand {
+  (command: 'config', targetId: string, config?: Record<string, unknown>): void;
+  (command: 'event', eventName: string, eventData?: Record<string, unknown>): void;
+  (command: 'consent', action: string, parameters: Record<string, unknown>): void;
+}
+
 // Declare gtag function for TypeScript
 declare global {
   interface Window {
-    gtag: (...args: any[]) => void;
-    dataLayer: any[];
+    gtag: GtagCommand;
+    dataLayer: Array<Record<string, unknown>>;
   }
 }

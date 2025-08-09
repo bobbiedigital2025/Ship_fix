@@ -3,12 +3,23 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { X, Download, Smartphone } from 'lucide-react';
 
+// PWA install prompt event interface
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+// Extend Navigator to include standalone property for iOS detection
+interface ExtendedNavigator extends Navigator {
+  standalone?: boolean;
+}
+
 interface PWAInstallPromptProps {
   onClose?: () => void;
 }
 
 export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onClose }) => {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
@@ -16,7 +27,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onClose }) =
   useEffect(() => {
     // Check if running as PWA
     const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches ||
-                            (window.navigator as any).standalone === true;
+                            (window.navigator as ExtendedNavigator).standalone === true;
     setIsStandalone(isStandaloneMode);
 
     // Check if iOS
@@ -24,7 +35,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onClose }) =
     setIsIOS(iOS);
 
     // Listen for beforeinstallprompt event (Chrome/Edge)
-    const handleBeforeInstallPrompt = (e: Event) => {
+    const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
       e.preventDefault();
       setDeferredPrompt(e);
       setShowPrompt(true);
