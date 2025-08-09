@@ -44,20 +44,52 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const checkSession = async () => {
     try {
       setIsLoading(true);
-      const isValid = await MCPAuthService.validateSession();
       
-      if (isValid) {
-        // Get user info from MCP session - in production this would come from MCP server
-        const storedUser = localStorage.getItem('mcp_user_info');
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
+      // First check if we have user info in localStorage
+      const storedUser = localStorage.getItem('mcp_user_info');
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        
+        // For trial users, skip MCP validation and use local validation
+        if (user.subscription?.plan === 'trial') {
+          // Check if trial has expired
+          const expiresAt = new Date(user.subscription.expiresAt);
+          if (expiresAt > new Date()) {
+            setUser(user);
+            return;
+          } else {
+            // Trial expired, remove user
+            localStorage.removeItem('mcp_user_info');
+            setUser(null);
+            return;
+          }
+        }
+        
+        // For non-trial users, validate with MCP
+        const isValid = await MCPAuthService.validateSession();
+        if (isValid) {
+          setUser(user);
+        } else {
+          setUser(null);
+          localStorage.removeItem('mcp_user_info');
         }
       } else {
         setUser(null);
-        localStorage.removeItem('mcp_user_info');
       }
     } catch (error) {
       console.error('Session check failed:', error);
+      // Don't clear localStorage on MCP errors for trial users
+      const storedUser = localStorage.getItem('mcp_user_info');
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        if (user.subscription?.plan === 'trial') {
+          const expiresAt = new Date(user.subscription.expiresAt);
+          if (expiresAt > new Date()) {
+            setUser(user);
+            return;
+          }
+        }
+      }
       setUser(null);
       localStorage.removeItem('mcp_user_info');
     } finally {

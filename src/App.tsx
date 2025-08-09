@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
 import { RoleGuard } from "@/components/auth/RoleGuard";
+import AuthGuard from "@/components/auth/AuthGuard";
 import { CookieConsentBanner } from "@/components/ui/CookieConsentBanner";
 import { GoogleAdsIntegration } from "@/components/ads/GoogleAdsIntegration";
 import { PWAInstallPrompt } from "@/components/ui/PWAInstallPrompt";
@@ -31,30 +32,69 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
-            
-            {/* Configuration accessible to all authenticated users */}
-            <Route path="/configuration" element={<Configuration />} />
-            
-            {/* Admin-only routes */}
-            <Route 
-              path="/mcp" 
-              element={
-                <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
-                  <MCPDashboard />
-                </RoleGuard>
-              } 
-            />
-            
-            {/* Available to all authenticated users */}
-            <Route path="/support" element={<Support />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/documentation" element={<Documentation />} />
-            <Route path="/ai-assistant" element={<AIAssistant />} />
-            
             {/* Legal pages - publicly accessible */}
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfService />} />
+            
+            {/* Protected routes */}
+            <Route 
+              path="/" 
+              element={
+                <AuthGuard>
+                  <Index />
+                </AuthGuard>
+              } 
+            />
+            <Route 
+              path="/configuration" 
+              element={
+                <AuthGuard>
+                  <Configuration />
+                </AuthGuard>
+              } 
+            />
+            <Route 
+              path="/mcp" 
+              element={
+                <AuthGuard>
+                  <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
+                    <MCPDashboard />
+                  </RoleGuard>
+                </AuthGuard>
+              } 
+            />
+            <Route 
+              path="/support" 
+              element={
+                <AuthGuard>
+                  <Support />
+                </AuthGuard>
+              } 
+            />
+            <Route 
+              path="/profile" 
+              element={
+                <AuthGuard>
+                  <Profile />
+                </AuthGuard>
+              } 
+            />
+            <Route 
+              path="/documentation" 
+              element={
+                <AuthGuard>
+                  <Documentation />
+                </AuthGuard>
+              } 
+            />
+            <Route 
+              path="/ai-assistant" 
+              element={
+                <AuthGuard>
+                  <AIAssistant />
+                </AuthGuard>
+              } 
+            />
             
             <Route path="*" element={<NotFound />} />
           </Routes>

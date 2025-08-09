@@ -7,7 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Shield, Lock } from 'lucide-react';
 
-const LoginForm: React.FC = () => {
+interface LoginFormProps {
+  onShowSignup?: () => void;
+}
+
+const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
   const { login, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -87,6 +91,19 @@ const LoginForm: React.FC = () => {
                 </>
               )}
             </Button>
+
+            {onShowSignup && (
+              <div className="text-center mt-4">
+                <button
+                  type="button"
+                  onClick={onShowSignup}
+                  className="text-sm text-blue-600 hover:text-blue-500"
+                  disabled={isLoading}
+                >
+                  Don't have an account? Sign up with subscription plans
+                </button>
+              </div>
+            )}
           </form>
         </CardContent>
       </Card>
