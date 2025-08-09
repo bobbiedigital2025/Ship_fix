@@ -1,10 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 
+interface AutomationStats {
+  active_rules: number;
+  executions_today: number;
+  ai_analyses_performed: number;
+  success_rate: number;
+  avg_response_time: string;
+  mcp_servers_connected: number;
+}
+
 interface MCPAutomationRule {
   id: string;
   name: string;
   trigger: 'shipment_created' | 'inventory_low' | 'tariff_change' | 'delay_detected' | 'cost_spike' | 'compliance_issue';
-  conditions: Record<string, any>;
+  conditions: Record<string, unknown>;
   actions: MCPAction[];
   enabled: boolean;
   priority: number;
@@ -12,7 +21,7 @@ interface MCPAutomationRule {
 
 interface MCPAction {
   type: 'route_optimize' | 'alert_procurement' | 'update_pricing' | 'flag_compliance' | 'analyze_costs' | 'notify_stakeholders' | 'auto_reroute';
-  config: Record<string, any>;
+  config: Record<string, unknown>;
 }
 
 interface MCPResource {
@@ -26,7 +35,7 @@ interface MCPResource {
 interface MCPTool {
   name: string;
   description: string;
-  inputSchema: Record<string, any>;
+  inputSchema: Record<string, unknown>;
 }
 
 export class MCPAutomationEngine {
@@ -601,22 +610,14 @@ export class MCPAutomationEngine {
   }
 
   // Get automation statistics
-  async getAutomationStats(): Promise<Record<string, any>> {
+  async getAutomationStats(): Promise<AutomationStats> {
     return {
-      total_rules: this.automationRules.length,
       active_rules: this.automationRules.filter(r => r.enabled).length,
-      shipments_processed_today: Math.floor(Math.random() * 150) + 50,
-      cost_savings_percentage: Math.round((Math.random() * 15 + 5) * 100) / 100, // 5-20%
-      avg_route_optimization_time: '2.3s',
-      supply_chain_visibility: '94%',
-      compliance_success_rate: 0.98,
-      tariff_analyses_performed: Math.floor(Math.random() * 75) + 25,
-      inventory_alerts_sent: Math.floor(Math.random() * 30) + 10,
-      disruptions_detected: Math.floor(Math.random() * 8) + 2,
-      auto_reroutes_completed: Math.floor(Math.random() * 12) + 3,
-      cost_variance_reduced: '23%',
-      supplier_performance_score: 0.91,
-      delivery_accuracy: '96.7%'
+      executions_today: Math.floor(Math.random() * 150) + 50,
+      ai_analyses_performed: Math.floor(Math.random() * 75) + 25,
+      success_rate: 0.98,
+      avg_response_time: '2.3s',
+      mcp_servers_connected: 3
     };
   }
 
@@ -728,3 +729,5 @@ export class MCPAutomationEngine {
 
 // Export singleton instance
 export const mcpAutomationEngine = new MCPAutomationEngine();
+
+export type { AutomationStats, MCPAutomationRule, MCPAction, MCPResource, MCPTool };

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { mcpClient, MCPServer } from '@/lib/mcp-client';
-import { mcpAutomationEngine } from '@/lib/mcp-automation-engine';
+import { mcpAutomationEngine, type AutomationStats, type MCPAutomationRule } from '@/lib/mcp-automation-engine';
 import SupplyChainDashboard from '@/components/dashboard/SupplyChainDashboard';
 import { TariffMonitor } from '@/components/dashboard/TariffMonitor';
 import { 
@@ -33,8 +33,8 @@ export default function MCPDashboard() {
   const [servers, setServers] = useState<MCPServer[]>([]);
   const [newServerUrl, setNewServerUrl] = useState('');
   const [loading, setLoading] = useState(false);
-  const [automationStats, setAutomationStats] = useState<any>(null);
-  const [automationRules, setAutomationRules] = useState<any[]>([]);
+  const [automationStats, setAutomationStats] = useState<AutomationStats | null>(null);
+  const [automationRules, setAutomationRules] = useState<MCPAutomationRule[]>([]);
 
   useEffect(() => {
     loadDashboardData();

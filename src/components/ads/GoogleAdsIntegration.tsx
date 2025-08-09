@@ -142,7 +142,7 @@ export const trackUserRegistration = (registrationType: string, customerTier: st
   }
 };
 
-export const trackPurchase = (transactionId: string, value: number, items: any[]) => {
+export const trackPurchase = (transactionId: string, value: number, items: EcommerceItem[]) => {
   if (typeof window !== 'undefined' && window.gtag) {
     window.gtag('event', 'purchase', {
       transaction_id: transactionId,
@@ -172,10 +172,34 @@ export const updateConsentMode = (preferences: {
   }
 };
 
+// Types for Google Analytics ecommerce tracking
+interface EcommerceItem {
+  item_id: string;
+  item_name: string;
+  category?: string;
+  quantity?: number;
+  price?: number;
+  item_brand?: string;
+  item_category2?: string;
+  item_category3?: string;
+  item_category4?: string;
+  item_category5?: string;
+  item_list_id?: string;
+  item_list_name?: string;
+  item_variant?: string;
+  affiliation?: string;
+  coupon?: string;
+  currency?: string;
+  discount?: number;
+  index?: number;
+  promotion_id?: string;
+  promotion_name?: string;
+}
+
 // Declare gtag function for TypeScript
 declare global {
   interface Window {
-    gtag: (...args: any[]) => void;
-    dataLayer: any[];
+    gtag: (command: string, event: string, parameters?: Record<string, unknown>) => void;
+    dataLayer: Record<string, unknown>[];
   }
 }

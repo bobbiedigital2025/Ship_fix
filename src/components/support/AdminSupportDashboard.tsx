@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -74,7 +74,7 @@ const AdminSupportDashboard: React.FC = () => {
     }, 30000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [loadData, refreshData]);
 
   useEffect(() => {
     if (selectedSeverity !== 'all') {
@@ -82,7 +82,7 @@ const AdminSupportDashboard: React.FC = () => {
     }
   }, [selectedSeverity]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [ticketsData, statsData] = await Promise.all([
@@ -115,9 +115,9 @@ const AdminSupportDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [lastRefresh, loading, toast]);
 
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     try {
       setRefreshing(true);
       await loadData();
@@ -126,7 +126,7 @@ const AdminSupportDashboard: React.FC = () => {
     } finally {
       setRefreshing(false);
     }
-  };
+  }, [loadData]);
 
   const handleStatusChange = async (ticketId: string, newStatus: 'open' | 'in-progress' | 'resolved' | 'closed') => {
     try {
@@ -423,7 +423,7 @@ const AdminSupportDashboard: React.FC = () => {
                           <TableCell>
                             <Select 
                               value={ticket.status} 
-                              onValueChange={(value) => handleStatusChange(ticket.id, value as any)}
+                              onValueChange={(value) => handleStatusChange(ticket.id, value as 'open' | 'in-progress' | 'resolved' | 'closed')}
                             >
                               <SelectTrigger className="w-32">
                                 <SelectValue />

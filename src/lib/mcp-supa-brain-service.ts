@@ -8,7 +8,7 @@ import { SupportTicket } from '@/types/support';
 
 interface MCPInkyResponse {
   success: boolean;
-  data?: any;
+  data?: Record<string, unknown>;
   suggestions?: string[];
   autoResponse?: string;
   confidence?: number;
@@ -292,7 +292,7 @@ export class MCPInkySupaBrainService {
   private static async logMCPInteraction(
     interactionType: string, 
     ticketId: string, 
-    data: any
+    data: Record<string, unknown>
   ) {
     try {
       await supabase
@@ -324,7 +324,7 @@ export class MCPInkySupaBrainService {
   /**
    * Format Supa Brain analysis response
    */
-  private static formatSupaBrainResponse(rawResponse: any): SupaBrainAnalysis {
+  private static formatSupaBrainResponse(rawResponse: Record<string, unknown>): SupaBrainAnalysis {
     return {
       ticketAnalysis: {
         sentiment: rawResponse.sentiment || 'neutral',

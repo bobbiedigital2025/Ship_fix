@@ -323,7 +323,7 @@ export function useOrderEmail() {
     customerEmail: string, 
     customerName: string, 
     orderId: string, 
-    orderDetails: any
+    orderDetails: Record<string, unknown>
   ) => {
     setState({ loading: true, success: false, error: null });
     
