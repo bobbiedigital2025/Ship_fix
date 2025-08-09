@@ -17,8 +17,14 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
+    // Enable advanced optimizations
+    minify: 'esbuild', // Use esbuild for faster builds
+    // Enable source maps for debugging in development
+    sourcemap: mode === 'development',
+    // Optimize chunk splitting
     rollupOptions: {
       output: {
+        // Optimize chunk splitting for better caching
         manualChunks: {
           // React and React Router
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
@@ -60,7 +66,7 @@ export default defineConfig(({ mode }) => ({
           // Form and validation
           'forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
           
-          // Data fetching
+          // Data fetching and storage
           'data': ['@tanstack/react-query', '@supabase/supabase-js'],
           
           // Utilities
@@ -84,10 +90,54 @@ export default defineConfig(({ mode }) => ({
             'react-resizable-panels',
             'input-otp'
           ]
-        }
-      }
+        },
+        // Optimize asset file names for better caching
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name?.split('.') || [];
+          const ext = info[info.length - 1];
+          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext || '')) {
+            return `assets/images/[name]-[hash][extname]`;
+          }
+          if (/css/i.test(ext || '')) {
+            return `assets/css/[name]-[hash][extname]`;
+          }
+          return `assets/[name]-[hash][extname]`;
+        },
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+      },
+      // Optimize external dependencies
+      external: (id) => {
+        // Keep large dependencies external if CDN is preferred
+        return false; // For now, bundle everything for offline support
+      },
     },
     // Increase chunk size warning limit since we're now using manual chunks
-    chunkSizeWarningLimit: 600
-  }
+    chunkSizeWarningLimit: 600,
+    // Enable asset inlining for small files
+    assetsInlineLimit: 4096,
+    // Enable CSS code splitting
+    cssCodeSplit: true,
+  },
+  // Optimize dependency pre-bundling
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@tanstack/react-query',
+      '@supabase/supabase-js',
+      'lucide-react'
+    ],
+    exclude: [
+      // Exclude large dependencies that should be loaded on demand
+    ],
+  },
+  // Enable experimental optimizations
+  esbuild: {
+    // Drop console logs in production
+    drop: mode === 'production' ? ['console', 'debugger'] : [],
+    // Enable tree shaking
+    treeShaking: true,
+  },
 }));
