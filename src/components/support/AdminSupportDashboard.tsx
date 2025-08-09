@@ -423,7 +423,7 @@ const AdminSupportDashboard: React.FC = () => {
                           <TableCell>
                             <Select 
                               value={ticket.status} 
-                              onValueChange={(value) => handleStatusChange(ticket.id, value as any)}
+                              onValueChange={(value) => handleStatusChange(ticket.id, value as 'open' | 'in-progress' | 'resolved' | 'closed')}
                             >
                               <SelectTrigger className="w-32">
                                 <SelectValue />
