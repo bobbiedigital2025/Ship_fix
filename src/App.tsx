@@ -17,6 +17,7 @@ import Support from "./pages/Support";
 import Profile from "./pages/Profile";
 import Documentation from "./pages/Documentation";
 import AIAssistant from "./pages/AIAssistant";
+import BrandDiscoveryTest from "./pages/BrandDiscoveryTest";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
@@ -32,6 +33,9 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            
+            {/* Test route for brand discovery */}
+            <Route path="/brand-test" element={<BrandDiscoveryTest />} />
             
             {/* Configuration accessible to all authenticated users */}
             <Route path="/configuration" element={<Configuration />} />
