@@ -87,10 +87,11 @@ const SmartAIAgent: React.FC = () => {
     const welcomeMessage: ChatMessage = {
       id: '1',
       type: 'ai',
-      content: "👋 Hi! I'm your Ship_fix AI Assistant! I can help you:\n\n🚀 Set up your shipping platform\n💡 Answer questions about features\n💳 Help with billing and upgrades\n⚙️ Customize your settings\n📞 Provide support\n\nWhat would you like to do today?",
+      content: "👋 Hi! I'm your Ship_fix AI Assistant! I can help you:\n\n🚀 Set up your shipping platform\n💡 Answer questions about features\n💳 Help with billing and upgrades\n⚙️ Customize your settings\n🎨 Build your brand identity\n📞 Provide support\n\nWhat would you like to do today?",
       timestamp: new Date(),
       actionButtons: [
         { text: "🚀 Set Up My Platform", action: "setup" },
+        { text: "🎨 Have Your Own Brand Info? Just Need a Little Help? Click Here", action: "brand_fasttrack", variant: 'premium' },
         { text: "💡 Learn About Features", action: "features" },
         { text: "💳 View Pricing & Upgrades", action: "pricing" },
         { text: "❓ Ask a Question", action: "question" }
@@ -124,6 +125,22 @@ const SmartAIAgent: React.FC = () => {
         setSetupStep(0);
         setSetupAnswers([]);
         askSetupQuestion(0);
+        break;
+      case 'brand_fasttrack':
+        addAIMessage("🎨 **Perfect! Let's get your brand dialed in!**\n\nI see you already have some brand ideas. Let's capture what you know and I'll help fill in any gaps with targeted questions.\n\n📝 **Fill out what you know:**\n• Brand Name\n• Mission Statement\n• Brand Colors\n• Logo Concept\n• Tagline\n• Market Niche\n• Target Audience\n\n✨ **Aura will analyze** what you provide and ask smart follow-up questions for anything missing!", [
+          { text: "📝 Start Brand Form", action: "brand_form" },
+          { text: "💬 Chat About My Brand", action: "brand_chat" },
+          { text: "📊 Get Brand Analysis", action: "brand_analysis" }
+        ]);
+        break;
+      case 'brand_form':
+        addAIMessage("📝 **Brand Information Form**\n\nLet's collect your brand details step by step. I'll ask you about each component:\n\n1️⃣ **Brand Name**: What would you like to call your brand?");
+        break;
+      case 'brand_chat':
+        addAIMessage("💬 **Tell me about your brand!**\n\nI'd love to learn about your business. Share whatever you know about:\n• Your brand name ideas\n• What your business does\n• Who your customers are\n• Your brand personality\n• Colors/style preferences\n\nI'll help you develop a complete brand identity!");
+        break;
+      case 'brand_analysis':
+        addAIMessage("📊 **Brand Analysis Mode**\n\nI'll analyze your current brand elements for consistency and market appeal. Share what you have so far and I'll provide:\n\n✨ **Real-time feedback**\n🎯 **Target audience alignment**\n🎨 **Visual consistency**\n📈 **Market positioning**\n💡 **Improvement suggestions**");
         break;
       case 'features':
         showFeatures();
