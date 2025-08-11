@@ -87,10 +87,11 @@ const SmartAIAgent: React.FC = () => {
     const welcomeMessage: ChatMessage = {
       id: '1',
       type: 'ai',
-      content: "👋 Hi! I'm your Ship_fix AI Assistant! I can help you:\n\n🚀 Set up your shipping platform\n💡 Answer questions about features\n💳 Help with billing and upgrades\n⚙️ Customize your settings\n📞 Provide support\n\nWhat would you like to do today?",
+      content: "👋 Hi! I'm your Ship_fix AI Assistant! I can help you:\n\n🚀 Set up your shipping platform\n💡 Answer questions about features\n💳 Help with billing and upgrades\n⚙️ Customize your settings\n🎨 Build your brand identity\n📞 Provide support\n\nWhat would you like to do today?",
       timestamp: new Date(),
       actionButtons: [
         { text: "🚀 Set Up My Platform", action: "setup" },
+        { text: "🎨 Have Your Own Brand Info? Just Need a Little Help? Click Here", action: "brand_fasttrack", variant: 'premium' },
         { text: "💡 Learn About Features", action: "features" },
         { text: "💳 View Pricing & Upgrades", action: "pricing" },
         { text: "❓ Ask a Question", action: "question" }
@@ -124,6 +125,46 @@ const SmartAIAgent: React.FC = () => {
         setSetupStep(0);
         setSetupAnswers([]);
         askSetupQuestion(0);
+        break;
+      case 'brand_fasttrack':
+        addAIMessage("🎨 **Perfect! Let's get your brand dialed in!**\n\nI see you already have some brand ideas. Let's capture what you know and I'll help fill in any gaps with targeted questions.\n\n📝 **Fill out what you know:**\n• Brand Name\n• Mission Statement\n• Brand Colors\n• Logo Concept\n• Tagline\n• Market Niche\n• Target Audience\n\n✨ **Aura will analyze** what you provide and ask smart follow-up questions for anything missing!", [
+          { text: "📝 Start Brand Form", action: "brand_form" },
+          { text: "💬 Chat About My Brand", action: "brand_chat" },
+          { text: "📊 Get Brand Analysis", action: "brand_analysis" }
+        ]);
+        break;
+      case 'brand_form':
+        addAIMessage("📝 **Brand Information Form**\n\nLet's collect your brand details step by step. I'll ask you about each component:\n\n1️⃣ **Brand Name**: What would you like to call your brand?");
+        break;
+      case 'brand_chat':
+        addAIMessage("💬 **Tell me about your brand!**\n\nI'd love to learn about your business. Share whatever you know about:\n• Your brand name ideas\n• What your business does\n• Who your customers are\n• Your brand personality\n• Colors/style preferences\n\nI'll help you develop a complete brand identity!");
+        break;
+      case 'brand_analysis':
+        addAIMessage("📊 **Brand Analysis Mode**\n\nI'll analyze your current brand elements for consistency and market appeal. Share what you have so far and I'll provide:\n\n✨ **Real-time feedback**\n🎯 **Target audience alignment**\n🎨 **Visual consistency**\n📈 **Market positioning**\n💡 **Improvement suggestions**");
+        break;
+      case 'brand_workshop':
+        addAIMessage("🎨 **Complete Brand Workshop**\n\nLet's build your brand step-by-step! I'll guide you through each component:\n\n**Phase 1: Foundation**\n1️⃣ Brand Name & Core Message\n2️⃣ Mission & Values\n3️⃣ Target Audience Definition\n\n**Phase 2: Identity**\n4️⃣ Visual Identity (Colors, Logo)\n5️⃣ Voice & Personality\n6️⃣ Market Positioning\n\nReady to start with your brand foundation?", [
+          { text: "🚀 Start Phase 1", action: "brand_foundation" },
+          { text: "🎨 Jump to Visual Identity", action: "brand_visual" },
+          { text: "📝 Complete Brand Brief", action: "brand_brief" }
+        ]);
+        break;
+      case 'brand_suggestions':
+        addAIMessage("💡 **Personalized Brand Suggestions**\n\nBased on our conversation, here are my recommendations:\n\n🎯 **For EcoFlow (Sustainable Tech):**\n• **Colors**: Forest green (#2D5016), Ocean blue (#1E40AF), Clean white (#FFFFFF)\n• **Tagline Ideas**: \"Technology that flows with nature\" | \"Green innovation, endless possibilities\"\n• **Logo Concept**: Stylized leaf with circuit patterns or water flow with tech elements\n• **Mission Focus**: Highlight specific environmental impact (energy savings, waste reduction)\n\nWant me to develop any of these further?", [
+          { text: "🎨 Design Logo Concepts", action: "logo_design" },
+          { text: "✏️ Refine Taglines", action: "tagline_workshop" },
+          { text: "🌱 Environmental Messaging", action: "eco_messaging" }
+        ]);
+        break;
+      case 'eco_brand':
+        addAIMessage("🌿 **Sustainable Brand Story Development**\n\nFor EcoFlow, let's create an authentic sustainability narrative:\n\n📖 **Brand Story Framework:**\n• **Problem**: Traditional tech's environmental impact\n• **Solution**: Your eco-friendly alternatives\n• **Impact**: Measurable environmental benefits\n• **Future**: Vision for sustainable tech\n\n🎯 **Key Messages:**\n• Quantify environmental benefits (% energy reduction, materials saved)\n• Highlight sustainable manufacturing processes\n• Showcase long-term durability vs. disposable tech\n\nWhat specific environmental benefits does EcoFlow provide?");
+        break;
+      case 'millennial_brand':
+        addAIMessage("👥 **Millennial-Focused Brand Strategy**\n\nFor EcoFlow targeting millennials:\n\n🎯 **Brand Positioning:**\n• **Authentic Purpose**: Real environmental impact, not greenwashing\n• **Transparency**: Open about processes, sourcing, impact\n• **Community**: Build eco-conscious tech community\n• **Experience**: Seamless online experience, social sharing\n\n📱 **Channel Strategy:**\n• Instagram: Behind-the-scenes sustainability content\n• TikTok: Quick eco-tech tips and impact stories\n• LinkedIn: Professional sustainability thought leadership\n\nWhich aspect would you like to develop first?", [
+          { text: "📱 Social Media Strategy", action: "social_strategy" },
+          { text: "🤝 Community Building", action: "community_plan" },
+          { text: "💚 Purpose Messaging", action: "purpose_messaging" }
+        ]);
         break;
       case 'features':
         showFeatures();
@@ -281,7 +322,29 @@ const SmartAIAgent: React.FC = () => {
 
     const input = userInput.toLowerCase();
     
-    if (input.includes('price') || input.includes('cost') || input.includes('billing')) {
+    // Enhanced brand-specific responses
+    if (input.includes('brand') || input.includes('logo') || input.includes('color') || input.includes('mission') || input.includes('tagline')) {
+      response = "🎨 **Brand Development Analysis:**\n\nI can see you're working on brand elements! Let me help you develop a cohesive brand identity.\n\n✨ **From what you shared, I can help with:**\n• Brand name optimization\n• Mission statement clarity\n• Color psychology and selection\n• Logo concept development\n• Tagline creation\n• Target audience alignment\n\n🧠 **Aura Analysis**: I'll provide real-time feedback on consistency and market appeal as we develop each component.";
+      actionButtons = [
+        { text: "🎨 Complete Brand Workshop", action: "brand_workshop" },
+        { text: "📊 Analyze Current Brand", action: "brand_analysis" },
+        { text: "💡 Get Brand Suggestions", action: "brand_suggestions" }
+      ];
+    } else if (input.includes('sustainable') || input.includes('eco') || input.includes('green')) {
+      response = "🌱 **Sustainability Brand Focus:**\n\nExcellent! Sustainability is a powerful brand differentiator. For eco-focused brands, I recommend:\n\n🎯 **Brand Elements:**\n• **Colors**: Earth tones, greens, blues for trust & nature\n• **Mission**: Clear environmental impact statement\n• **Audience**: Eco-conscious consumers value authenticity\n• **Messaging**: Focus on real environmental benefits\n\n✨ Let's develop your sustainable brand story!";
+      actionButtons = [
+        { text: "🌿 Develop Eco Brand Story", action: "eco_brand" },
+        { text: "🎨 Sustainable Color Palette", action: "eco_colors" },
+        { text: "📝 Environmental Mission", action: "eco_mission" }
+      ];
+    } else if (input.includes('millennial') || input.includes('young') || input.includes('generation')) {
+      response = "👥 **Millennial Target Audience Analysis:**\n\nGreat target audience choice! Millennials respond well to:\n\n🎯 **Brand Characteristics:**\n• **Authenticity**: Real stories, not just marketing\n• **Purpose**: Brands that make a difference\n• **Experience**: Seamless digital interactions\n• **Community**: Social responsibility and connection\n• **Visual**: Clean, modern, mobile-first design\n\n💡 Let's align your brand with millennial values!";
+      actionButtons = [
+        { text: "👥 Millennial Brand Strategy", action: "millennial_brand" },
+        { text: "📱 Digital-First Approach", action: "digital_brand" },
+        { text: "🤝 Community Building", action: "community_brand" }
+      ];
+    } else if (input.includes('price') || input.includes('cost') || input.includes('billing')) {
       response = "💰 **Billing & Pricing Info:**\n\nYour current plan: **" + customerData.currentPlan + "**\n\nNeed to upgrade or have billing questions? I can help with:\n• Plan comparisons\n• Upgrade options\n• Invoice questions\n• Payment methods\n\nWhat specifically would you like to know?";
       actionButtons = [
         { text: "💳 View My Billing", action: "view_billing" },
