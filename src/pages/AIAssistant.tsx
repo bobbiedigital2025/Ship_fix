@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import PageLayout from '@/components/PageLayout';
 import SmartAIAgent from '../components/ai/SmartAIAgent';
+import ChatInterface from '../components/ai/ChatInterface';
 import { TourSelector } from '@/components/ui/TourSelector';
 import { GuidedTour } from '@/components/ui/GuidedTour';
 import { useTourManager } from '@/hooks/use-tour-manager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Brain, Navigation, MessageCircle } from 'lucide-react';
+import { Brain, Navigation, MessageCircle, Palette } from 'lucide-react';
+import { BrandInfo } from '../components/ai/ConversationEngine';
 
 const AIAssistant: React.FC = () => {
   const { 
@@ -18,23 +20,33 @@ const AIAssistant: React.FC = () => {
     previousStep 
   } = useTourManager();
 
+  const [currentBrandInfo, setCurrentBrandInfo] = useState<BrandInfo | null>(null);
+
+  const handleBrandUpdate = (brandInfo: BrandInfo) => {
+    setCurrentBrandInfo(brandInfo);
+  };
+
   return (
     <PageLayout>
       <div className="max-w-7xl mx-auto p-6">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4" data-tour="ai-assistant">
-            AI Assistant & Guided Tours
+            AI Assistant & Brand Discovery
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Get help from our AI assistant or follow interactive guided tours to master Ship_fix platform
+            Intelligent brand discovery with sentiment detection, context persistence, and iterative refinement
           </p>
         </div>
 
-        <Tabs defaultValue="chat" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="brand-discovery" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="brand-discovery" className="flex items-center">
+              <Palette className="h-4 w-4 mr-2" />
+              Brand Discovery
+            </TabsTrigger>
             <TabsTrigger value="chat" className="flex items-center">
               <MessageCircle className="h-4 w-4 mr-2" />
-              AI Chat Assistant
+              Legacy Chat
             </TabsTrigger>
             <TabsTrigger value="tours" className="flex items-center">
               <Navigation className="h-4 w-4 mr-2" />
@@ -42,12 +54,18 @@ const AIAssistant: React.FC = () => {
             </TabsTrigger>
           </TabsList>
 
+          <TabsContent value="brand-discovery" className="space-y-0">
+            <div className="min-h-[600px]">
+              <ChatInterface onBrandUpdate={handleBrandUpdate} />
+            </div>
+          </TabsContent>
+
           <TabsContent value="chat">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Brain className="h-5 w-5 mr-2 text-blue-600" />
-                  Supply Chain AI Assistant
+                  Supply Chain AI Assistant (Legacy)
                 </CardTitle>
               </CardHeader>
               <CardContent>
